@@ -43,13 +43,13 @@ void Test::RunAll() {
     std::cout << '\n' << BOLD << passed << '/' << caseCount_ << " passed" << RESET << std::endl;
 }
 
-void Test::Check(bool condition, const std::string& message, std::source_location location) {
+void Test::Check(bool condition, const char* message, std::source_location location) {
     if (condition) { return; }
 
     const char* fileName = std::strrchr(location.file_name(), '/');
     fileName = (fileName == nullptr)? location.file_name() : fileName + 1;
 
-    std::string text = message + " (" + fileName + ":" + std::to_string(location.line()) + ")";
+    std::string text = std::string(message) + " (" + fileName + ":" + std::to_string(location.line()) + ")";
     WriteToPipe(text.data(), text.size());
     ExitChild(Status::Fail);
 }
@@ -135,12 +135,24 @@ Test::Status Test::RunInChild(
         alarm(timeoutSeconds);
 
         try {
-            auto start = std::chrono::steady_clock::now();
             test();
-            auto end = std::chrono::steady_clock::now();
+            alarm(timeoutSeconds);
 
-            long long elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-            WriteToPipe(&elapsed, sizeof(elapsed));
+            long long best = -1;
+            long long total = 0;
+            for (int run = 0; run < MAX_TIMED_RUNS && total < TIME_BUDGET_NANOSECONDS; ++run) {
+                auto start = std::chrono::steady_clock::now();
+                test();
+                auto end = std::chrono::steady_clock::now();
+
+                long long elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                total += elapsed;
+                if (best < 0 || elapsed < best) {
+                    best = elapsed;
+                }
+            }
+
+            WriteToPipe(&best, sizeof(best));
             ExitChild(Status::Pass);
         } catch (const std::exception& e) {
             std::string text = std::string("threw an exception: ") + e.what();

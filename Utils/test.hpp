@@ -26,7 +26,7 @@ public:
 
     static void Check(
         bool condition,
-        const std::string& message = "check failed",
+        const char* message = "check failed",
         std::source_location location = std::source_location::current());
     [[noreturn]] static void Todo();
 
@@ -37,6 +37,9 @@ protected:
 
 private:
     enum class Status { Pass, Fail, Crash, Timeout, Todo, Error, BadTest, Count };
+
+    static constexpr int MAX_TIMED_RUNS = 100;
+    static constexpr long long TIME_BUDGET_NANOSECONDS = 1'000'000'000;
 
     [[noreturn]] static void ExitChild(Status status);
 
