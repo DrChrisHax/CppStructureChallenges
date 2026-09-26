@@ -1,3 +1,5 @@
+// Created by Chris Manlove
+
 #pragma once
 
 #include <cstddef>

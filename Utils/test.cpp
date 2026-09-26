@@ -1,3 +1,5 @@
+// Created by Chris Manlove
+
 #include <csignal>
 #include <cstring>
 #include <sys/wait.h>
