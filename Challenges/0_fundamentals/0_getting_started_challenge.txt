@@ -1,0 +1,62 @@
+// REQUIRED
+
+Challenge 0: Getting started
+
+Welcome! In this project you build C++ data structures from scratch to learn how they really work under the hood.
+It assumes you know the basics of C++ (everything on learncpp.com) but have never implemented these structures.
+
+Created by Chris Manlove (ChrisManlove.com).
+
+
+Layout
+------
+Challenges/   Your work. Some lessons are .txt reading pages; the rest are .hpp files you fill in.
+Solutions/    A reference solution for every challenge.
+Tests/        The tests for each challenge. You don't need to touch these.
+Utils/        The test runner. You don't need to touch this either.
+
+Each folder is split into sections (0_fundamentals, ...), and every file starts with its challenge number.
+
+
+Doing a challenge
+-----------------
+1. Open the challenge file and read the comment at the top.
+2. Find Test::Todo() and replace it with your code.
+3. Run ./run.sh and enter the challenge number.
+
+The solutions are there whenever you want them. When you look at them, if at all, is up to you.
+
+
+Reading the output
+------------------
+Each test prints its result, how long your code took ("You"), how long the reference solution took ("Solution"),
+and a description of what it tests.
+
+PASS      Your code is correct.
+FAIL      Your code gave the wrong answer. The message below it shows the file and line.
+CRASH     Your code crashed (for example, a segfault).
+TIMEOUT   Your code took too long, probably an infinite loop.
+TODO      You haven't started this one yet.
+ERROR     Your code threw an exception that was never caught.
+BAD TEST  The reference solution failed, so the test itself is broken, not your code.
+
+
+Tiers
+-----
+The top of every challenge file says how important it is:
+
+// REQUIRED       The main path. Later challenges build on it.
+// RECOMMENDED    Worth doing, but nothing Required depends on it.
+// OPTIONAL       Niche or deep-dive material. Safe to skip.
+
+
+Requirements
+------------
+- A C++20 compiler
+- CMake 3.20 or newer
+- Linux or WSL (the test runner uses fork() and signals, so plain Windows won't work)
+
+
+License
+-------
+MIT. You're free to use this code however you like, as long as you keep the copyright notice. See LICENSE.

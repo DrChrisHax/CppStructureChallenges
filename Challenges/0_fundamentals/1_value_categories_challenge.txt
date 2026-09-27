@@ -1,0 +1,12 @@
+// REQUIRED
+
+Challenge 1: Value categories
+
+Every expression in C++ has a type and a value category (lvalue, prvalue, xvalue, glvalue, rvalue). The category
+decides what a reference can bind to and which overload gets picked, and it is the foundation for move semantics in
+the next challenge.
+
+There is no code for this lesson. Read these before moving on:
+
+- https://stackoverflow.com/a/3601661
+- https://en.cppreference.com/w/cpp/language/value_category
