@@ -5,6 +5,7 @@
 #include "test.hpp"
 
 #include "0_fundamentals/2_move_tests.hpp"
+#include "0_fundamentals/3_forward_tests.hpp"
 
 int main() {
     int number = -1;
@@ -15,6 +16,11 @@ int main() {
     switch (number) {
         case 2: {
             Test2 test;
+            test.RunAll();
+            break;
+        }
+        case 3: {
+            Test3 test;
             test.RunAll();
             break;
         }
