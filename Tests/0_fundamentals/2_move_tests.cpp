@@ -23,6 +23,27 @@ public:
     MoveOnly& operator=(MoveOnly&&) = default;
 };
 
+struct ThrowingMove {
+    ThrowingMove() = default;
+
+    ThrowingMove(const ThrowingMove&) {
+        ++Copies;
+    }
+
+    ThrowingMove(ThrowingMove&&) {
+        ++Moves;
+    }
+
+    inline static int Copies = 0;
+    inline static int Moves = 0;
+};
+
+struct ThrowingMoveOnly {
+    ThrowingMoveOnly() = default;
+    ThrowingMoveOnly(const ThrowingMoveOnly&) = delete;
+    ThrowingMoveOnly(ThrowingMoveOnly&&) {}
+};
+
 }  // namespace
 
 namespace tests::move {
@@ -32,12 +53,22 @@ struct User {
     static decltype(challenges::move::Move(std::declval<T>())) Move(T&& value) {
         return challenges::move::Move(std::forward<T>(value));
     }
+
+    template <typename T>
+    static decltype(challenges::move::MoveIfNoexcept(std::declval<T&>())) MoveIfNoexcept(T& value) {
+        return challenges::move::MoveIfNoexcept(value);
+    }
 };
 
 struct Solution {
     template <typename T>
     static decltype(solutions::move::Move(std::declval<T>())) Move(T&& value) {
         return solutions::move::Move(std::forward<T>(value));
+    }
+
+    template <typename T>
+    static decltype(solutions::move::MoveIfNoexcept(std::declval<T&>())) MoveIfNoexcept(T& value) {
+        return solutions::move::MoveIfNoexcept(value);
     }
 };
 
@@ -79,6 +110,50 @@ void CStyleArray() {
     Test::Check(std::is_same_v<decltype(Impl::Move(arr)), int(&&)[3]>, "Move(arr) should return int(&&)[3]");
 }
 
+template <typename Impl>
+void IfNoexceptInt() {
+    int x = 1;
+    Impl::MoveIfNoexcept(x);
+    Test::Check(std::is_same_v<decltype(Impl::MoveIfNoexcept(x)), int&&>, "MoveIfNoexcept(x) should return int&&");
+}
+
+template <typename Impl>
+void IfNoexceptNothrowMove() {
+    Widget w;
+    Impl::MoveIfNoexcept(w);
+    Test::Check(
+        std::is_same_v<decltype(Impl::MoveIfNoexcept(w)), Widget&&>,
+        "MoveIfNoexcept(w) should return Widget&& because Widget's move can't throw");
+}
+
+template <typename Impl>
+void IfNoexceptThrowingMove() {
+    ThrowingMove t;
+    Impl::MoveIfNoexcept(t);
+    Test::Check(
+        std::is_same_v<decltype(Impl::MoveIfNoexcept(t)), const ThrowingMove&>,
+        "MoveIfNoexcept(t) should return const ThrowingMove& because its move can throw and it can be copied");
+}
+
+template <typename Impl>
+void IfNoexceptThrowingMoveOnly() {
+    ThrowingMoveOnly t;
+    Impl::MoveIfNoexcept(t);
+    Test::Check(
+        std::is_same_v<decltype(Impl::MoveIfNoexcept(t)), ThrowingMoveOnly&&>,
+        "MoveIfNoexcept(t) should return ThrowingMoveOnly&& because it can't be copied");
+}
+
+template <typename Impl>
+void IfNoexceptPicksCopy() {
+    ThrowingMove original;
+    ThrowingMove::Copies = 0;
+    ThrowingMove::Moves = 0;
+    ThrowingMove made(Impl::MoveIfNoexcept(original));
+    Test::Check(ThrowingMove::Copies == 1, "Building from MoveIfNoexcept(original) should copy");
+    Test::Check(ThrowingMove::Moves == 0, "Building from MoveIfNoexcept(original) should not move");
+}
+
 }  // namespace tests::move
 
 Test2::Test2()
@@ -93,4 +168,9 @@ void Test2::RunTests() {
     Run("L value reference: const int x = 1; const int& y = x", 1, LValueReference<User>, LValueReference<Solution>);
     Run("Non-copyable type: MoveOnly", 1, NonCopyableType<User>, NonCopyableType<Solution>);
     Run("C-style array: int arr[3] = {1, 2, 3}", 1, CStyleArray<User>, CStyleArray<Solution>);
+    Run("MoveIfNoexcept int: int x = 1", 1, IfNoexceptInt<User>, IfNoexceptInt<Solution>);
+    Run("MoveIfNoexcept nothrow move: Widget", 1, IfNoexceptNothrowMove<User>, IfNoexceptNothrowMove<Solution>);
+    Run("MoveIfNoexcept throwing move, copyable: ThrowingMove", 1, IfNoexceptThrowingMove<User>, IfNoexceptThrowingMove<Solution>);
+    Run("MoveIfNoexcept throwing move, move-only: ThrowingMoveOnly", 1, IfNoexceptThrowingMoveOnly<User>, IfNoexceptThrowingMoveOnly<Solution>);
+    Run("MoveIfNoexcept picks the copy: ThrowingMove made(MoveIfNoexcept(original))", 1, IfNoexceptPicksCopy<User>, IfNoexceptPicksCopy<Solution>);
 }

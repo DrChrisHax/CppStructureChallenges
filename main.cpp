@@ -6,6 +6,7 @@
 
 #include "0_fundamentals/2_move_tests.hpp"
 #include "0_fundamentals/3_forward_tests.hpp"
+#include "0_fundamentals/4_swap_tests.hpp"
 
 int main() {
     int number = -1;
@@ -21,6 +22,11 @@ int main() {
         }
         case 3: {
             Test3 test;
+            test.RunAll();
+            break;
+        }
+        case 4: {
+            Test4 test;
             test.RunAll();
             break;
         }
