@@ -3,7 +3,6 @@
 #pragma once
 
 #include <cstddef>
-
 #include <source_location>
 #include <string>
 

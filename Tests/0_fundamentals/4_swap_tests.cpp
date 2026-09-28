@@ -1,7 +1,6 @@
 // Created by Chris Manlove
 
 #include <cstddef>
-
 #include <utility>
 
 #include "0_fundamentals/4_swap_tests.hpp"

@@ -16,13 +16,17 @@
 // one can do all of that: the compiler-generated copy constructor and copy assignment copy the C array element by
 // element. You write none of that code, and the tests check it works.
 //
-// It's an aggregate: a plain struct with public members and no constructors. Aggregates can be brace-initialized
-// member by member, which is how `Array<int, 3> a = {1, 2, 3};` fills Elements without any constructor. So keep
-// Elements public, and don't add constructors, a base class, or private members, or that line stops compiling.
-// Elements is public only because aggregates need it to be; code that uses an Array goes through the member
-// functions. (libstdc++ calls it _M_elems.)
+// It's an aggregate: a struct with only public data members and no constructors. Aggregates can be
+// brace-initialized member by member, which is how `Array<int, 3> a = {1, 2, 3};` fills Elements without any
+// constructor.
 //
-// Everything is constexpr, like std::array. The tests use an Array in a constant expression.
+// Normally a class keeps its member variables private, so only its own functions can touch them. Array can't: an
+// aggregate's data members must all be public, and making Elements private (or adding a constructor) stops it being
+// an aggregate, so the line above stops compiling. That's why std::array is declared as a struct with its C array
+// public. (libstdc++ calls it _M_elems; the name starts with an underscore to warn you not to use it.)
+// Code that uses an Array still goes through the member functions.
+//
+// Everything is constexpr, like std::array, so an Array can be used at compile time.
 //
 // What to implement:
 // - operator[]: index into Elements, with no bounds check. There's a const and a non-const version: the const one
@@ -52,7 +56,6 @@
 #pragma once
 
 #include <cstddef>
-
 #include <stdexcept>
 #include <type_traits>
 #include <utility>

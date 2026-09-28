@@ -3,12 +3,10 @@
 #pragma once
 
 #include <cstddef>
-
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
-
-#include "test.hpp"
 
 namespace solutions::array {
 
@@ -20,63 +18,59 @@ struct Array {
     using ConstIterator = const T*;
 
     constexpr T& operator[](SizeType index) {
-        // Your code here.
-        Test::Todo();
+        return Elements[index];
     }
 
     constexpr const T& operator[](SizeType index) const {
-        // Your code here.
-        Test::Todo();
+        return Elements[index];
     }
 
     constexpr T& At(SizeType index) {
-        // Your code here.
-        Test::Todo();
+        if (index >= N) {
+            throw std::out_of_range(
+                "Array::At: index (which is " + std::to_string(index) + ") >= N (which is " + std::to_string(N) + ")");
+        }
+        return Elements[index];
     }
 
     constexpr const T& At(SizeType index) const {
-        // Your code here.
-        Test::Todo();
+        if (index >= N) {
+            throw std::out_of_range(
+                "Array::At: index (which is " + std::to_string(index) + ") >= N (which is " + std::to_string(N) + ")");
+        }
+        return Elements[index];
     }
 
     constexpr T* Data() noexcept {
-        // Your code here.
-        Test::Todo();
+        return Elements;
     }
 
     constexpr const T* Data() const noexcept {
-        // Your code here.
-        Test::Todo();
+        return Elements;
     }
 
     constexpr SizeType Size() const noexcept {
-        // Your code here.
-        Test::Todo();
+        return N;
     }
 
     constexpr Iterator begin() noexcept {
-        // Your code here.
-        Test::Todo();
+        return Elements;
     }
 
     constexpr ConstIterator begin() const noexcept {
-        // Your code here.
-        Test::Todo();
+        return Elements;
     }
 
     constexpr Iterator end() noexcept {
-        // Your code here.
-        Test::Todo();
+        return Elements + N;
     }
 
     constexpr ConstIterator end() const noexcept {
-        // Your code here.
-        Test::Todo();
+        return Elements + N;
     }
 
-    constexpr void Swap(Array& other) {
-        // Your code here.
-        Test::Todo();
+    constexpr void Swap(Array& other) noexcept(std::is_nothrow_swappable_v<T>) {
+        std::swap(Elements, other.Elements);
     }
 
     T Elements[N];
