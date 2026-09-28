@@ -35,20 +35,43 @@ public:
 protected:
     virtual void RunTests() = 0;
 
-    void Run(const std::string& description, unsigned timeoutSeconds, TestFunction userTest, TestFunction solutionTest);
+    void Run(
+        const std::string& description,
+        unsigned timeoutSeconds,
+        TestFunction userTest,
+        TestFunction solutionTest,
+        TestFunction stlTest = nullptr);
 
 private:
     enum class Status { Pass, Fail, Crash, Timeout, Todo, Error, BadTest, Count };
 
-    static constexpr int MAX_TIMED_RUNS = 100;
-    static constexpr long long TIME_BUDGET_NANOSECONDS = 1'000'000'000;
+    struct Outcome {
+        Status Result = Status::Pass;
+        long long Nanoseconds = 0;
+        std::string Message;
+    };
+
+    static constexpr int MAX_TIMED_RUNS = 1000;
+    static constexpr unsigned TIME_BUDGET_SECONDS = 1;
+    static constexpr long long TIME_BUDGET_NANOSECONDS = TIME_BUDGET_SECONDS * 1'000'000'000LL;
+    static constexpr int EXIT_CODE_OFFSET = 100;
+    static constexpr int NUMBER_COLUMN_WIDTH = 3;
+    static constexpr int RESULT_COLUMN_WIDTH = 10;
+    static constexpr std::size_t TIME_COLUMN_WIDTH = 12;
+    static constexpr long long MIN_GAP_NANOSECONDS = 50;
+    static constexpr double YELLOW_RATIO = 2.0;
+    static constexpr double RED_RATIO = 10.0;
 
     [[noreturn]] static void ExitChild(Status status);
 
     static void WriteToPipe(const void* data, std::size_t size);
-    static Status RunInChild(TestFunction test, unsigned timeoutSeconds, long long& nanoseconds, std::string& message);
+    static void Empty();
+    static long long FastestTime(TestFunction test);
+    static Outcome RunInChild(TestFunction test, unsigned timeoutSeconds);
+    static std::string BadTestMessage(const char* who, const Outcome& outcome);
     static std::string FormatTime(long long nanoseconds);
-    static std::string TimeCell(Status status, long long nanoseconds, unsigned timeoutSeconds);
+    static std::string PadCell(const std::string& text, const char* color = nullptr);
+    static std::string TimeCell(const Outcome& outcome, long long fastest, unsigned timeoutSeconds);
 
     static int resultPipe_;
     static const char* statusNames_[static_cast<int>(Status::Count)];

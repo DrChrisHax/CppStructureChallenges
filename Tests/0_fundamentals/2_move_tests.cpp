@@ -7,7 +7,7 @@
 #include "0_fundamentals/2_move_challenge.hpp"
 #include "0_fundamentals/2_move_solution.hpp"
 
-namespace {
+namespace tests::move {
 
 struct Widget {
     int Value = 0;
@@ -44,10 +44,6 @@ struct ThrowingMoveOnly {
     ThrowingMoveOnly(ThrowingMoveOnly&&) {}
 };
 
-}  // namespace
-
-namespace tests::move {
-
 struct User {
     template <typename T>
     static decltype(challenges::move::Move(std::declval<T>())) Move(T&& value) {
@@ -69,6 +65,18 @@ struct Solution {
     template <typename T>
     static decltype(solutions::move::MoveIfNoexcept(std::declval<T&>())) MoveIfNoexcept(T& value) {
         return solutions::move::MoveIfNoexcept(value);
+    }
+};
+
+struct Stl {
+    template <typename T>
+    static decltype(std::move(std::declval<T>())) Move(T&& value) {
+        return std::move(std::forward<T>(value));
+    }
+
+    template <typename T>
+    static decltype(std::move_if_noexcept(std::declval<T&>())) MoveIfNoexcept(T& value) {
+        return std::move_if_noexcept(value);
     }
 };
 
@@ -163,14 +171,14 @@ Test2::Test2()
 void Test2::RunTests() {
     using namespace tests::move;
 
-    Run("L value: int x = 1", 1, LValue<User>, LValue<Solution>);
-    Run("R value: Move(Widget{})", 1, RValue<User>, RValue<Solution>);
-    Run("L value reference: const int x = 1; const int& y = x", 1, LValueReference<User>, LValueReference<Solution>);
-    Run("Non-copyable type: MoveOnly", 1, NonCopyableType<User>, NonCopyableType<Solution>);
-    Run("C-style array: int arr[3] = {1, 2, 3}", 1, CStyleArray<User>, CStyleArray<Solution>);
-    Run("MoveIfNoexcept int: int x = 1", 1, IfNoexceptInt<User>, IfNoexceptInt<Solution>);
-    Run("MoveIfNoexcept nothrow move: Widget", 1, IfNoexceptNothrowMove<User>, IfNoexceptNothrowMove<Solution>);
-    Run("MoveIfNoexcept throwing move, copyable: ThrowingMove", 1, IfNoexceptThrowingMove<User>, IfNoexceptThrowingMove<Solution>);
-    Run("MoveIfNoexcept throwing move, move-only: ThrowingMoveOnly", 1, IfNoexceptThrowingMoveOnly<User>, IfNoexceptThrowingMoveOnly<Solution>);
-    Run("MoveIfNoexcept picks the copy: ThrowingMove made(MoveIfNoexcept(original))", 1, IfNoexceptPicksCopy<User>, IfNoexceptPicksCopy<Solution>);
+    Run("L value: int x = 1", 1, LValue<User>, LValue<Solution>, LValue<Stl>);
+    Run("R value: Move(Widget{})", 1, RValue<User>, RValue<Solution>, RValue<Stl>);
+    Run("L value reference: const int x = 1; const int& y = x", 1, LValueReference<User>, LValueReference<Solution>, LValueReference<Stl>);
+    Run("Non-copyable type: MoveOnly", 1, NonCopyableType<User>, NonCopyableType<Solution>, NonCopyableType<Stl>);
+    Run("C-style array: int arr[3] = {1, 2, 3}", 1, CStyleArray<User>, CStyleArray<Solution>, CStyleArray<Stl>);
+    Run("MoveIfNoexcept int: int x = 1", 1, IfNoexceptInt<User>, IfNoexceptInt<Solution>, IfNoexceptInt<Stl>);
+    Run("MoveIfNoexcept nothrow move: Widget", 1, IfNoexceptNothrowMove<User>, IfNoexceptNothrowMove<Solution>, IfNoexceptNothrowMove<Stl>);
+    Run("MoveIfNoexcept throwing move, copyable: ThrowingMove", 1, IfNoexceptThrowingMove<User>, IfNoexceptThrowingMove<Solution>, IfNoexceptThrowingMove<Stl>);
+    Run("MoveIfNoexcept throwing move, move-only: ThrowingMoveOnly", 1, IfNoexceptThrowingMoveOnly<User>, IfNoexceptThrowingMoveOnly<Solution>, IfNoexceptThrowingMoveOnly<Stl>);
+    Run("MoveIfNoexcept picks the copy: ThrowingMove made(MoveIfNoexcept(original))", 1, IfNoexceptPicksCopy<User>, IfNoexceptPicksCopy<Solution>, IfNoexceptPicksCopy<Stl>);
 }

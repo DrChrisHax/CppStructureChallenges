@@ -8,7 +8,7 @@
 #include "0_fundamentals/4_swap_challenge.hpp"
 #include "0_fundamentals/4_swap_solution.hpp"
 
-namespace {
+namespace tests::swap {
 
 struct Counter {
     Counter(int value)
@@ -58,10 +58,6 @@ struct ThrowingMove {
     }
 };
 
-}  // namespace
-
-namespace tests::swap {
-
 struct User {
     template <typename T>
     static void Swap(T& a, T& b) noexcept(noexcept(challenges::swap::Swap(a, b))) {
@@ -95,6 +91,23 @@ struct Solution {
     static T Exchange(T& obj, U&& newValue)
         noexcept(noexcept(solutions::swap::Exchange(obj, std::forward<U>(newValue)))) {
         return solutions::swap::Exchange(obj, std::forward<U>(newValue));
+    }
+};
+
+struct Stl {
+    template <typename T>
+    static void Swap(T& a, T& b) noexcept(noexcept(std::swap(a, b))) {
+        std::swap(a, b);
+    }
+
+    template <typename T, std::size_t N>
+    static void Swap(T (&a)[N], T (&b)[N]) noexcept(noexcept(std::swap(a, b))) {
+        std::swap(a, b);
+    }
+
+    template <typename T, typename U>
+    static T Exchange(T& obj, U&& newValue) noexcept(noexcept(std::exchange(obj, std::forward<U>(newValue)))) {
+        return std::exchange(obj, std::forward<U>(newValue));
     }
 };
 
@@ -244,21 +257,21 @@ Test4::Test4()
 void Test4::RunTests() {
     using namespace tests::swap;
 
-    Run("Ints: Swap(x, y)", 1, Ints<User>, Ints<Solution>);
-    Run("No copies: Swap(a, b) on Counter", 1, NoCopies<User>, NoCopies<Solution>);
-    Run("Move-only type: Swap(a, b) on MoveOnly", 1, MoveOnlyType<User>, MoveOnlyType<Solution>);
-    Run("Swap noexcept: int vs ThrowingMove", 1, SwapNoexcept<User>, SwapNoexcept<Solution>);
-    Run("Arrays: int a[3], b[3]", 1, Arrays<User>, Arrays<Solution>);
-    Run("Multidimensional arrays: int a[2][2], b[2][2]", 1, MultidimensionalArrays<User>, MultidimensionalArrays<Solution>);
-    Run("Array swap noexcept: int[3] vs ThrowingMove[3]", 1, ArraySwapNoexcept<User>, ArraySwapNoexcept<Solution>);
+    Run("Ints: Swap(x, y)", 1, Ints<User>, Ints<Solution>, Ints<Stl>);
+    Run("No copies: Swap(a, b) on Counter", 1, NoCopies<User>, NoCopies<Solution>, NoCopies<Stl>);
+    Run("Move-only type: Swap(a, b) on MoveOnly", 1, MoveOnlyType<User>, MoveOnlyType<Solution>, MoveOnlyType<Stl>);
+    Run("Swap noexcept: int vs ThrowingMove", 1, SwapNoexcept<User>, SwapNoexcept<Solution>, SwapNoexcept<Stl>);
+    Run("Arrays: int a[3], b[3]", 1, Arrays<User>, Arrays<Solution>, Arrays<Stl>);
+    Run("Multidimensional arrays: int a[2][2], b[2][2]", 1, MultidimensionalArrays<User>, MultidimensionalArrays<Solution>, MultidimensionalArrays<Stl>);
+    Run("Array swap noexcept: int[3] vs ThrowingMove[3]", 1, ArraySwapNoexcept<User>, ArraySwapNoexcept<Solution>, ArraySwapNoexcept<Stl>);
     Run(
         "Multidimensional array swap noexcept: int[2][2] vs ThrowingMove[2][2]",
         1,
         MultidimensionalArraySwapNoexcept<User>,
-        MultidimensionalArraySwapNoexcept<Solution>);
-    Run("Exchange: Exchange(x, 2)", 1, ExchangeBasic<User>, ExchangeBasic<Solution>);
-    Run("Exchange moves the new value: Exchange(x, Counter(2))", 1, ExchangeMovesNewValue<User>, ExchangeMovesNewValue<Solution>);
-    Run("Exchange copies an lvalue: Exchange(x, replacement)", 1, ExchangeCopiesLValue<User>, ExchangeCopiesLValue<Solution>);
-    Run("Move constructor idiom: Exchange(other.Ptr, nullptr)", 1, MoveConstructorIdiom<User>, MoveConstructorIdiom<Solution>);
-    Run("Exchange noexcept: int vs ThrowingMove", 1, ExchangeNoexcept<User>, ExchangeNoexcept<Solution>);
+        MultidimensionalArraySwapNoexcept<Solution>, MultidimensionalArraySwapNoexcept<Stl>);
+    Run("Exchange: Exchange(x, 2)", 1, ExchangeBasic<User>, ExchangeBasic<Solution>, ExchangeBasic<Stl>);
+    Run("Exchange moves the new value: Exchange(x, Counter(2))", 1, ExchangeMovesNewValue<User>, ExchangeMovesNewValue<Solution>, ExchangeMovesNewValue<Stl>);
+    Run("Exchange copies an lvalue: Exchange(x, replacement)", 1, ExchangeCopiesLValue<User>, ExchangeCopiesLValue<Solution>, ExchangeCopiesLValue<Stl>);
+    Run("Move constructor idiom: Exchange(other.Ptr, nullptr)", 1, MoveConstructorIdiom<User>, MoveConstructorIdiom<Solution>, MoveConstructorIdiom<Stl>);
+    Run("Exchange noexcept: int vs ThrowingMove", 1, ExchangeNoexcept<User>, ExchangeNoexcept<Solution>, ExchangeNoexcept<Stl>);
 }

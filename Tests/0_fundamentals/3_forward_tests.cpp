@@ -24,6 +24,13 @@ struct Solution {
     }
 };
 
+struct Stl {
+    template <typename T, typename U>
+    static decltype(auto) Forward(U&& value) {
+        return std::forward<T>(std::forward<U>(value));
+    }
+};
+
 char Which(int&) {
     return 'L';
 }
@@ -99,10 +106,10 @@ Test3::Test3()
 void Test3::RunTests() {
     using namespace tests::forward;
 
-    Run("L value as L value: Forward<int&>(x)", 1, LValueAsLValue<User>, LValueAsLValue<Solution>);
-    Run("L value as R value: Forward<int>(x)", 1, LValueAsRValue<User>, LValueAsRValue<Solution>);
-    Run("R value: Forward<int>(1)", 1, RValue<User>, RValue<Solution>);
-    Run("Const: Forward<const int&>(c), Forward<const int>(c)", 1, Const<User>, Const<Solution>);
-    Run("Through a wrapper: Wrapper(x), Wrapper(1)", 1, ThroughWrapper<User>, ThroughWrapper<Solution>);
-    Run("Parameter pack: WrapperPack(x, 1, y, 2)", 1, ParameterPack<User>, ParameterPack<Solution>);
+    Run("L value as L value: Forward<int&>(x)", 1, LValueAsLValue<User>, LValueAsLValue<Solution>, LValueAsLValue<Stl>);
+    Run("L value as R value: Forward<int>(x)", 1, LValueAsRValue<User>, LValueAsRValue<Solution>, LValueAsRValue<Stl>);
+    Run("R value: Forward<int>(1)", 1, RValue<User>, RValue<Solution>, RValue<Stl>);
+    Run("Const: Forward<const int&>(c), Forward<const int>(c)", 1, Const<User>, Const<Solution>, Const<Stl>);
+    Run("Through a wrapper: Wrapper(x), Wrapper(1)", 1, ThroughWrapper<User>, ThroughWrapper<Solution>, ThroughWrapper<Stl>);
+    Run("Parameter pack: WrapperPack(x, 1, y, 2)", 1, ParameterPack<User>, ParameterPack<Solution>, ParameterPack<Stl>);
 }

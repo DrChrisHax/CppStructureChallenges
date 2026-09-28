@@ -5,10 +5,12 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <chrono>
 #include <exception>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 
@@ -29,9 +31,16 @@ Test::Test(int number, std::string name)
 {}
 
 void Test::RunAll() {
-    std::cout << BOLD << "Challenge " << number_ << ": " << name_ << RESET << "\n\n";
-    std::cout << std::right << std::setw(3) << "#" << "  " << std::left << std::setw(10) << "Result"
-              << std::setw(12) << "You" << std::setw(12) << "Solution" << "Description\n";
+    std::cout << BOLD << "Challenge " << number_ << ": " << name_ << RESET << '\n';
+    std::cout << "*Fastest of up to " << MAX_TIMED_RUNS << " runs\n";
+    std::cout << "*Yellow = " << YELLOW_RATIO << "x slower, Red = " << RED_RATIO << "x slower (gaps under "
+              << MIN_GAP_NANOSECONDS << " ns ignored)\n\n";
+    std::cout << std::right << std::setw(NUMBER_COLUMN_WIDTH) << "#" << "  "
+              << std::left << std::setw(RESULT_COLUMN_WIDTH) << "Result"
+              << std::setw(TIME_COLUMN_WIDTH) << "You"
+              << std::setw(TIME_COLUMN_WIDTH) << "Solution"
+              << std::setw(TIME_COLUMN_WIDTH) << "STL"
+              << "Description\n";
 
     RunTests();
 
@@ -64,35 +73,39 @@ void Test::Run(
     const std::string& description,
     unsigned timeoutSeconds,
     TestFunction userTest,
-    TestFunction solutionTest) {
+    TestFunction solutionTest,
+    TestFunction stlTest) {
     ++caseCount_;
 
-    long long solutionTime = 0;
-    std::string solutionMessage;
-    Status solutionStatus = RunInChild(solutionTest, timeoutSeconds, solutionTime, solutionMessage);
+    Outcome solution = RunInChild(solutionTest, timeoutSeconds);
+    Outcome stl = (stlTest == nullptr)? Outcome() : RunInChild(stlTest, timeoutSeconds);
+    Outcome user = RunInChild(userTest, timeoutSeconds);
 
-    long long userTime = 0;
-    std::string userMessage;
-    Status userStatus = RunInChild(userTest, timeoutSeconds, userTime, userMessage);
-
-    Status result = userStatus;
-    std::string message = userMessage;
-
-    if (solutionStatus != Status::Pass) {
+    Status result = user.Result;
+    std::string message = user.Message;
+    if (solution.Result != Status::Pass) {
         result = Status::BadTest;
-        message = "solution got " + std::string(statusNames_[static_cast<int>(solutionStatus)]);
-        if (!solutionMessage.empty()) {
-            message += ": " + solutionMessage;
-        }
+        message = BadTestMessage("solution", solution);
+    } else if (stl.Result != Status::Pass) {
+        result = Status::BadTest;
+        message = BadTestMessage("stl", stl);
     }
+
+    long long fastest = std::numeric_limits<long long>::max();
+    if (user.Result == Status::Pass) { fastest = std::min(fastest, user.Nanoseconds); }
+    if (solution.Result == Status::Pass) { fastest = std::min(fastest, solution.Nanoseconds); }
+    if (stlTest != nullptr && stl.Result == Status::Pass) { fastest = std::min(fastest, stl.Nanoseconds); }
+
+    std::string stlCell = (stlTest == nullptr)? PadCell("n/a") : TimeCell(stl, fastest, timeoutSeconds);
 
     int index = static_cast<int>(result);
     ++statusCounts_[index];
 
-    std::cout << std::right << std::setw(3) << caseCount_ << "  "
-              << statusColors_[index] << std::left << std::setw(10) << statusNames_[index] << RESET
-              << std::setw(12) << TimeCell(userStatus, userTime, timeoutSeconds)
-              << std::setw(12) << TimeCell(solutionStatus, solutionTime, timeoutSeconds)
+    std::cout << std::right << std::setw(NUMBER_COLUMN_WIDTH) << caseCount_ << "  "
+              << statusColors_[index] << std::left << std::setw(RESULT_COLUMN_WIDTH) << statusNames_[index] << RESET
+              << TimeCell(user, fastest, timeoutSeconds)
+              << TimeCell(solution, fastest, timeoutSeconds)
+              << stlCell
               << description << '\n';
 
     if (!message.empty()) {
@@ -114,14 +127,10 @@ void Test::WriteToPipe(const void* data, std::size_t size) {
 
 void Test::ExitChild(Status status) {
     std::cout.flush();
-    _exit(100 + static_cast<int>(status));
+    _exit(EXIT_CODE_OFFSET + static_cast<int>(status));
 }
 
-Test::Status Test::RunInChild(
-    TestFunction test,
-    unsigned timeoutSeconds,
-    long long& nanoseconds,
-    std::string& message) {
+Test::Outcome Test::RunInChild(TestFunction test, unsigned timeoutSeconds) {
     int fds[2];
     if (pipe(fds) != 0) {
         std::cout << "pipe() failed\n";
@@ -138,21 +147,12 @@ Test::Status Test::RunInChild(
 
         try {
             test();
-            alarm(timeoutSeconds);
+            alarm(TIME_BUDGET_SECONDS + 2 * timeoutSeconds);
 
-            long long best = -1;
-            long long total = 0;
-            for (int run = 0; run < MAX_TIMED_RUNS && total < TIME_BUDGET_NANOSECONDS; ++run) {
-                auto start = std::chrono::steady_clock::now();
-                test();
-                auto end = std::chrono::steady_clock::now();
-
-                long long elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-                total += elapsed;
-                if (best < 0 || elapsed < best) {
-                    best = elapsed;
-                }
-            }
+            // volatile so the compiler can't inline the empty call and measure 0 overhead.
+            TestFunction volatile empty = &Test::Empty;
+            long long overhead = FastestTime(empty);
+            long long best = std::max(FastestTime(test) - overhead, 0LL);
 
             WriteToPipe(&best, sizeof(best));
             ExitChild(Status::Pass);
@@ -180,30 +180,61 @@ Test::Status Test::RunInChild(
     int waitStatus = 0;
     waitpid(pid, &waitStatus, 0);
 
+    Outcome outcome;
     if (WIFSIGNALED(waitStatus)) {
         int signalNumber = WTERMSIG(waitStatus);
         if (signalNumber == SIGALRM) {
-            message = "took longer than " + std::to_string(timeoutSeconds) + " s";
-            return Status::Timeout;
+            outcome.Result = Status::Timeout;
+            outcome.Message = "took longer than " + std::to_string(timeoutSeconds) + " s";
+            return outcome;
         }
-        message = strsignal(signalNumber);
-        return Status::Crash;
+        outcome.Result = Status::Crash;
+        outcome.Message = strsignal(signalNumber);
+        return outcome;
     }
 
     int exitCode = WEXITSTATUS(waitStatus);
-    int code = exitCode - 100;
+    int code = exitCode - EXIT_CODE_OFFSET;
     if (code < 0 || code >= static_cast<int>(Status::Count)) {
-        message = "exited early with code " + std::to_string(exitCode);
-        return Status::Crash;
+        outcome.Result = Status::Crash;
+        outcome.Message = "exited early with code " + std::to_string(exitCode);
+        return outcome;
     }
 
-    Status status = static_cast<Status>(code);
-    if (status == Status::Pass) {
-        std::memcpy(&nanoseconds, output.data(), sizeof(nanoseconds));
+    outcome.Result = static_cast<Status>(code);
+    if (outcome.Result == Status::Pass) {
+        std::memcpy(&outcome.Nanoseconds, output.data(), sizeof(outcome.Nanoseconds));
     } else {
-        message = output;
+        outcome.Message = output;
     }
-    return status;
+    return outcome;
+}
+
+std::string Test::BadTestMessage(const char* who, const Outcome& outcome) {
+    std::string message = std::string(who) + " got " + statusNames_[static_cast<int>(outcome.Result)];
+    if (!outcome.Message.empty()) {
+        message += ": " + outcome.Message;
+    }
+    return message;
+}
+
+void Test::Empty() {}
+
+long long Test::FastestTime(TestFunction test) {
+    long long best = -1;
+    long long total = 0;
+    for (int run = 0; run < MAX_TIMED_RUNS && total < TIME_BUDGET_NANOSECONDS; ++run) {
+        auto start = std::chrono::steady_clock::now();
+        test();
+        auto end = std::chrono::steady_clock::now();
+
+        long long elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        total += elapsed;
+        if (best < 0 || elapsed < best) {
+            best = elapsed;
+        }
+    }
+    return best;
 }
 
 std::string Test::FormatTime(long long nanoseconds) {
@@ -221,12 +252,30 @@ std::string Test::FormatTime(long long nanoseconds) {
     return out.str();
 }
 
-std::string Test::TimeCell(Status status, long long nanoseconds, unsigned timeoutSeconds) {
-    if (status == Status::Pass) {
-        return FormatTime(nanoseconds);
+std::string Test::PadCell(const std::string& text, const char* color) {
+    std::string padding(TIME_COLUMN_WIDTH - text.size(), ' ');
+    if (color == nullptr) {
+        return text + padding;
     }
-    if (status == Status::Timeout) {
-        return ">" + std::to_string(timeoutSeconds) + " s";
+    return color + text + RESET + padding;
+}
+
+std::string Test::TimeCell(const Outcome& outcome, long long fastest, unsigned timeoutSeconds) {
+    if (outcome.Result == Status::Timeout) {
+        return PadCell(">" + std::to_string(timeoutSeconds) + " s");
     }
-    return "-";
+    if (outcome.Result != Status::Pass) {
+        return PadCell("-");
+    }
+
+    double ratio = static_cast<double>(outcome.Nanoseconds) / static_cast<double>(std::max(fastest, 1LL));
+    const char* color = GREEN;
+    if (outcome.Nanoseconds - fastest >= MIN_GAP_NANOSECONDS) {
+        if (ratio >= RED_RATIO) {
+            color = RED;
+        } else if (ratio >= YELLOW_RATIO) {
+            color = YELLOW;
+        }
+    }
+    return PadCell(FormatTime(outcome.Nanoseconds), color);
 }
