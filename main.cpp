@@ -8,6 +8,7 @@
 #include "0_fundamentals/3_forward_tests.hpp"
 #include "0_fundamentals/4_swap_tests.hpp"
 #include "0_fundamentals/5_addressof_tests.hpp"
+#include "2_contiguous/200_array_tests.hpp"
 
 int main() {
     int number = -1;
@@ -33,6 +34,11 @@ int main() {
         }
         case 5: {
             Test5 test;
+            test.RunAll();
+            break;
+        }
+        case 200: {
+            Test200 test;
             test.RunAll();
             break;
         }
