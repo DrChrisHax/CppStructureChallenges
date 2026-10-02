@@ -17,7 +17,7 @@
 // element. You write none of that code, and the tests check it works.
 //
 // It's an aggregate: a struct with only public data members and no constructors. Aggregates can be
-// brace-initialized member by member, which is how `Array<int, 3> a = {1, 2, 3};` fills Elements without any
+// brace-initialized member by member, which is how Array<int, 3> a = {1, 2, 3}; fills Elements without any
 // constructor.
 //
 // Normally a class keeps its member variables private, so only its own functions can touch them. Array can't: an

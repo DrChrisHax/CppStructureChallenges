@@ -21,8 +21,9 @@
 // the whole point is to use the T the wrapper deduced, not a new one. That's why the parameters below use
 // std::remove_reference_t<T>: it stops T from being deduced from the argument.
 //
-// Parameter packs: a template can take any number of arguments with `typename... Args` and `Args&&... args`, and
-// forward all of them at once with `std::forward<Args>(args)...`. This is exactly how emplace_back works.
+// Parameter packs: a template can take any number of arguments with typename... Args and Args&&... args, and
+// forward all of them at once with std::forward<Args>(args)... where the trailing ... expands the pack. This is
+// exactly how emplace_back works.
 //
 // Implement both Forward overloads so they do exactly what std::forward does. The first handles lvalues (the normal
 // case); the second handles rvalues, like Forward<int>(42).
