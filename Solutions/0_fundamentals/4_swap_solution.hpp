@@ -17,10 +17,10 @@ constexpr void Swap(T& a, T& b) noexcept(
     b = std::move(tmp);
 }
 
-template <typename T, std::size_t N>
+template <typename T, size_t N>
 constexpr void Swap(T (&a)[N], T (&b)[N]) noexcept(
     std::is_nothrow_swappable_v<T>) {
-    for (std::size_t i = 0; i < N; ++i) {
+    for (size_t i = 0; i < N; ++i) {
         Swap(a[i], b[i]);
     }
 }

@@ -18,7 +18,7 @@
 // whole word, so mark it [[no_unique_address]] (C++20) to let it take none. Put your members where the stub says. The
 // tests check sizeof.
 //
-// DynamicLength is the largest std::size_t, used as a "no fixed length" marker. No real span can be that long, so the
+// DynamicLength is the largest size_t, used as a "no fixed length" marker. No real span can be that long, so the
 // value is free to mean something else.
 //
 // Constness is shallow. A span is like a pointer: a const Span<int> can't be pointed somewhere else, but it can still
@@ -79,19 +79,19 @@
 
 namespace challenges::span {
 
-inline constexpr std::size_t DynamicLength = static_cast<std::size_t>(-1);
+inline constexpr size_t DynamicLength = static_cast<size_t>(-1);
 
 // The length of a Span<T, Length> viewed as bytes, for AsBytes and AsWritableBytes. A dynamic length stays dynamic.
-template <typename T, std::size_t Length>
-inline constexpr std::size_t BytesLength = Length == DynamicLength ? DynamicLength : Length * sizeof(T);
+template <typename T, size_t Length>
+inline constexpr size_t BytesLength = Length == DynamicLength ? DynamicLength : Length * sizeof(T);
 
 // Your length storage helper (if you use one) goes here.
 
-template <typename T, std::size_t Length = DynamicLength>
+template <typename T, size_t Length = DynamicLength>
 struct Span {
     using ElementType = T;
     using ValueType = std::remove_cv_t<T>;
-    using SizeType = std::size_t;
+    using SizeType = size_t;
     using Iterator = T*;
 
     constexpr Span(T* ptr, SizeType length)
@@ -100,7 +100,7 @@ struct Span {
         Test::Todo();
     }
 
-    template <std::size_t N>
+    template <size_t N>
         requires(Length == DynamicLength || Length == N)
     constexpr Span(std::type_identity_t<T> (&arr)[N]) noexcept
     {
@@ -108,7 +108,7 @@ struct Span {
         Test::Todo();
     }
 
-    template <typename U, std::size_t N>
+    template <typename U, size_t N>
         requires(Length == DynamicLength || Length == N) && std::is_convertible_v<U (*)[], T (*)[]>
     constexpr Span(std::array<U, N>& arr) noexcept
     {
@@ -116,7 +116,7 @@ struct Span {
         Test::Todo();
     }
 
-    template <typename U, std::size_t OtherLength>
+    template <typename U, size_t OtherLength>
         requires(Length == DynamicLength || OtherLength == DynamicLength || Length == OtherLength) &&
                 std::is_convertible_v<U (*)[], T (*)[]>
     constexpr Span(const Span<U, OtherLength>& other) noexcept
@@ -160,7 +160,7 @@ struct Span {
         Test::Todo();
     }
 
-    template <std::size_t N>
+    template <size_t N>
     constexpr Span<T, N> First() const {
         // Your code here.
         Test::Todo();
@@ -181,13 +181,13 @@ struct Span {
 
 // Your deduction guides go here: one for a C array, one for a std::array.
 
-template <typename T, std::size_t Length>
+template <typename T, size_t Length>
 Span<const std::byte, BytesLength<T, Length>> AsBytes(Span<T, Length> s) noexcept {
     // Your code here.
     Test::Todo();
 }
 
-template <typename T, std::size_t Length>
+template <typename T, size_t Length>
     requires(!std::is_const_v<T>)
 Span<std::byte, BytesLength<T, Length>> AsWritableBytes(Span<T, Length> s) noexcept {
     // Your code here.

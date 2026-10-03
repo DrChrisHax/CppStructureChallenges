@@ -1,6 +1,7 @@
 // Created by Chris Manlove
 
 #include <csignal>
+#include <cstdint>
 #include <cstring>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -16,16 +17,16 @@
 
 #include "test.hpp"
 
-int Test::resultPipe_ = -1;
-const char* Test::statusNames_[static_cast<int>(Status::Count)] = {
+int32_t Test::resultPipe_ = -1;
+const char* Test::statusNames_[static_cast<int32_t>(Status::Count)] = {
     "PASS", "FAIL", "CRASH", "TIMEOUT", "TODO", "ERROR", "BAD TEST"
 };
 
-const char* Test::statusColors_[static_cast<int>(Status::Count)] = {
+const char* Test::statusColors_[static_cast<int32_t>(Status::Count)] = {
     GREEN, RED, BOLD_RED, YELLOW, CYAN, MAGENTA, BOLD_YELLOW
 };
 
-Test::Test(int number, std::string name)
+Test::Test(int32_t number, std::string name)
     : name_(name)
     , number_(number)
 {}
@@ -45,12 +46,12 @@ void Test::RunAll() {
     RunTests();
 
     std::cout << '\n';
-    for (int i = 0; i < static_cast<int>(Status::Count); ++i) {
+    for (int32_t i = 0; i < static_cast<int32_t>(Status::Count); ++i) {
         if (statusCounts_[i] > 0) {
             std::cout << statusColors_[i] << statusCounts_[i] << ' ' << statusNames_[i] << RESET << "  ";
         }
     }
-    int passed = statusCounts_[static_cast<int>(Status::Pass)];
+    int32_t passed = statusCounts_[static_cast<int32_t>(Status::Pass)];
     std::cout << '\n' << BOLD << passed << '/' << caseCount_ << " passed" << RESET << std::endl;
 }
 
@@ -71,7 +72,7 @@ void Test::Todo() {
 
 void Test::Run(
     const std::string& description,
-    unsigned timeoutSeconds,
+    uint32_t timeoutSeconds,
     TestFunction userTest,
     TestFunction solutionTest,
     TestFunction stlTest) {
@@ -91,14 +92,14 @@ void Test::Run(
         message = BadTestMessage("stl", stl);
     }
 
-    long long fastest = std::numeric_limits<long long>::max();
+    uint64_t fastest = std::numeric_limits<uint64_t>::max();
     if (user.Result == Status::Pass) { fastest = std::min(fastest, user.Nanoseconds); }
     if (solution.Result == Status::Pass) { fastest = std::min(fastest, solution.Nanoseconds); }
     if (stlTest != nullptr && stl.Result == Status::Pass) { fastest = std::min(fastest, stl.Nanoseconds); }
 
     std::string stlCell = (stlTest == nullptr)? PadCell("n/a") : TimeCell(stl, fastest, timeoutSeconds);
 
-    int index = static_cast<int>(result);
+    int32_t index = static_cast<int32_t>(result);
     ++statusCounts_[index];
 
     std::cout << std::right << std::setw(NUMBER_COLUMN_WIDTH) << caseCount_ << "  "
@@ -113,7 +114,7 @@ void Test::Run(
     }
 }
 
-void Test::WriteToPipe(const void* data, std::size_t size) {
+void Test::WriteToPipe(const void* data, size_t size) {
     const char* bytes = static_cast<const char*>(data);
     while (size > 0) {
         ssize_t written = write(resultPipe_, bytes, size);
@@ -121,17 +122,17 @@ void Test::WriteToPipe(const void* data, std::size_t size) {
             return;
         }
         bytes += written;
-        size -= static_cast<std::size_t>(written);
+        size -= static_cast<size_t>(written);
     }
 }
 
 void Test::ExitChild(Status status) {
     std::cout.flush();
-    _exit(EXIT_CODE_OFFSET + static_cast<int>(status));
+    _exit(EXIT_CODE_OFFSET + static_cast<int32_t>(status));
 }
 
-Test::Outcome Test::RunInChild(TestFunction test, unsigned timeoutSeconds) {
-    int fds[2];
+Test::Outcome Test::RunInChild(TestFunction test, uint32_t timeoutSeconds) {
+    int32_t fds[2];
     if (pipe(fds) != 0) {
         std::cout << "pipe() failed\n";
         std::exit(1);
@@ -151,8 +152,9 @@ Test::Outcome Test::RunInChild(TestFunction test, unsigned timeoutSeconds) {
 
             // volatile so the compiler can't inline the empty call and measure 0 overhead.
             TestFunction volatile empty = &Test::Empty;
-            long long overhead = FastestTime(empty);
-            long long best = std::max(FastestTime(test) - overhead, 0LL);
+            uint64_t overhead = FastestTime(empty);
+            uint64_t time = FastestTime(test);
+            uint64_t best = (time > overhead)? time - overhead : 0;
 
             WriteToPipe(&best, sizeof(best));
             ExitChild(Status::Pass);
@@ -173,16 +175,16 @@ Test::Outcome Test::RunInChild(TestFunction test, unsigned timeoutSeconds) {
     char buffer[256];
     ssize_t bytesRead = 0;
     while ((bytesRead = read(fds[0], buffer, sizeof(buffer))) > 0) {
-        output.append(buffer, static_cast<std::size_t>(bytesRead));
+        output.append(buffer, static_cast<size_t>(bytesRead));
     }
     close(fds[0]);
 
-    int waitStatus = 0;
+    int32_t waitStatus = 0;
     waitpid(pid, &waitStatus, 0);
 
     Outcome outcome;
     if (WIFSIGNALED(waitStatus)) {
-        int signalNumber = WTERMSIG(waitStatus);
+        int32_t signalNumber = WTERMSIG(waitStatus);
         if (signalNumber == SIGALRM) {
             outcome.Result = Status::Timeout;
             outcome.Message = "took longer than " + std::to_string(timeoutSeconds) + " s";
@@ -193,9 +195,9 @@ Test::Outcome Test::RunInChild(TestFunction test, unsigned timeoutSeconds) {
         return outcome;
     }
 
-    int exitCode = WEXITSTATUS(waitStatus);
-    int code = exitCode - EXIT_CODE_OFFSET;
-    if (code < 0 || code >= static_cast<int>(Status::Count)) {
+    int32_t exitCode = WEXITSTATUS(waitStatus);
+    int32_t code = exitCode - EXIT_CODE_OFFSET;
+    if (code < 0 || code >= static_cast<int32_t>(Status::Count)) {
         outcome.Result = Status::Crash;
         outcome.Message = "exited early with code " + std::to_string(exitCode);
         return outcome;
@@ -211,7 +213,7 @@ Test::Outcome Test::RunInChild(TestFunction test, unsigned timeoutSeconds) {
 }
 
 std::string Test::BadTestMessage(const char* who, const Outcome& outcome) {
-    std::string message = std::string(who) + " got " + statusNames_[static_cast<int>(outcome.Result)];
+    std::string message = std::string(who) + " got " + statusNames_[static_cast<int32_t>(outcome.Result)];
     if (!outcome.Message.empty()) {
         message += ": " + outcome.Message;
     }
@@ -220,24 +222,25 @@ std::string Test::BadTestMessage(const char* who, const Outcome& outcome) {
 
 void Test::Empty() {}
 
-long long Test::FastestTime(TestFunction test) {
-    long long best = -1;
-    long long total = 0;
-    for (int run = 0; run < MAX_TIMED_RUNS && total < TIME_BUDGET_NANOSECONDS; ++run) {
+uint64_t Test::FastestTime(TestFunction test) {
+    uint64_t best = std::numeric_limits<uint64_t>::max();
+    uint64_t total = 0;
+    for (int32_t run = 0; run < MAX_TIMED_RUNS && total < TIME_BUDGET_NANOSECONDS; ++run) {
         auto start = std::chrono::steady_clock::now();
         test();
         auto end = std::chrono::steady_clock::now();
 
-        long long elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        std::chrono::nanoseconds duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+        uint64_t elapsed = static_cast<uint64_t>(duration.count());
         total += elapsed;
-        if (best < 0 || elapsed < best) {
+        if (elapsed < best) {
             best = elapsed;
         }
     }
     return best;
 }
 
-std::string Test::FormatTime(long long nanoseconds) {
+std::string Test::FormatTime(uint64_t nanoseconds) {
     std::ostringstream out;
     out << std::fixed << std::setprecision(1);
     if (nanoseconds < 1'000) {
@@ -260,7 +263,7 @@ std::string Test::PadCell(const std::string& text, const char* color) {
     return color + text + RESET + padding;
 }
 
-std::string Test::TimeCell(const Outcome& outcome, long long fastest, unsigned timeoutSeconds) {
+std::string Test::TimeCell(const Outcome& outcome, uint64_t fastest, uint32_t timeoutSeconds) {
     if (outcome.Result == Status::Timeout) {
         return PadCell(">" + std::to_string(timeoutSeconds) + " s");
     }
@@ -268,7 +271,7 @@ std::string Test::TimeCell(const Outcome& outcome, long long fastest, unsigned t
         return PadCell("-");
     }
 
-    double ratio = static_cast<double>(outcome.Nanoseconds) / static_cast<double>(std::max(fastest, 1LL));
+    double ratio = static_cast<double>(outcome.Nanoseconds) / static_cast<double>(std::max(fastest, uint64_t(1)));
     const char* color = GREEN;
     if (outcome.Nanoseconds - fastest >= MIN_GAP_NANOSECONDS) {
         if (ratio >= RED_RATIO) {

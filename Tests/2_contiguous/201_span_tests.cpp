@@ -4,6 +4,7 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <span>
 #include <type_traits>
 #include <utility>
@@ -22,7 +23,7 @@ concept ImplicitlyConstructs = requires(Args&&... args) { TakeSpan<S>({std::forw
 
 // GCC drops std::span's explicit(...) when its constructors are inherited with using, so StlSpan forwards to
 // std::span by hand and copies its explicitness.
-template <typename T, std::size_t Length = std::dynamic_extent>
+template <typename T, size_t Length = std::dynamic_extent>
 struct StlSpan : std::span<T, Length> {
     using Base = std::span<T, Length>;
 
@@ -34,14 +35,14 @@ struct StlSpan : std::span<T, Length> {
 
     using ElementType = T;
     using ValueType = std::remove_cv_t<T>;
-    using SizeType = std::size_t;
+    using SizeType = size_t;
     using Iterator = typename Base::iterator;
 
     constexpr T* Data() const noexcept { return this->data(); }
     constexpr SizeType Size() const noexcept { return this->size(); }
     constexpr SizeType SizeBytes() const noexcept { return this->size_bytes(); }
     constexpr StlSpan<T> First(SizeType length) const { return StlSpan<T>(this->first(length)); }
-    template <std::size_t N>
+    template <size_t N>
     constexpr StlSpan<T, N> First() const { return StlSpan<T, N>(this->template first<N>()); }
     constexpr StlSpan<T> Last(SizeType length) const { return StlSpan<T>(this->last(length)); }
     constexpr StlSpan<T> Subspan(SizeType offset, SizeType length = std::dynamic_extent) const {
@@ -49,25 +50,25 @@ struct StlSpan : std::span<T, Length> {
     }
 };
 
-template <typename T, std::size_t N>
+template <typename T, size_t N>
 StlSpan(T (&)[N]) -> StlSpan<T, N>;
 
-template <typename T, std::size_t N>
+template <typename T, size_t N>
 StlSpan(std::array<T, N>&) -> StlSpan<T, N>;
 
 template <typename T>
-StlSpan(T*, std::size_t) -> StlSpan<T>;
+StlSpan(T*, size_t) -> StlSpan<T>;
 
 // Each impl wraps its own AsBytes and AsWritableBytes, and checks deduction guides with requires expressions so a
 // missing guide is a failed check instead of a compile error.
 struct User {
-    template <typename T, std::size_t Length = challenges::span::DynamicLength>
+    template <typename T, size_t Length = challenges::span::DynamicLength>
     using Span = challenges::span::Span<T, Length>;
 
-    template <typename T, std::size_t Length>
+    template <typename T, size_t Length>
     static auto AsBytes(Span<T, Length> s) { return challenges::span::AsBytes(s); }
 
-    template <typename T, std::size_t Length>
+    template <typename T, size_t Length>
     static auto AsWritableBytes(Span<T, Length> s) { return challenges::span::AsWritableBytes(s); }
 
     template <typename S>
@@ -79,19 +80,19 @@ struct User {
     };
 
     template <typename Pointer, typename Expected>
-    static constexpr bool DeducesFromPointerAndLength = requires(Pointer p, std::size_t n) {
+    static constexpr bool DeducesFromPointerAndLength = requires(Pointer p, size_t n) {
         { challenges::span::Span(p, n) } -> std::same_as<Expected>;
     };
 };
 
 struct Solution {
-    template <typename T, std::size_t Length = solutions::span::DynamicLength>
+    template <typename T, size_t Length = solutions::span::DynamicLength>
     using Span = solutions::span::Span<T, Length>;
 
-    template <typename T, std::size_t Length>
+    template <typename T, size_t Length>
     static auto AsBytes(Span<T, Length> s) { return solutions::span::AsBytes(s); }
 
-    template <typename T, std::size_t Length>
+    template <typename T, size_t Length>
     static auto AsWritableBytes(Span<T, Length> s) { return solutions::span::AsWritableBytes(s); }
 
     template <typename S>
@@ -103,22 +104,22 @@ struct Solution {
     };
 
     template <typename Pointer, typename Expected>
-    static constexpr bool DeducesFromPointerAndLength = requires(Pointer p, std::size_t n) {
+    static constexpr bool DeducesFromPointerAndLength = requires(Pointer p, size_t n) {
         { solutions::span::Span(p, n) } -> std::same_as<Expected>;
     };
 };
 
 struct Stl {
-    template <typename T, std::size_t Length = std::dynamic_extent>
+    template <typename T, size_t Length = std::dynamic_extent>
     using Span = StlSpan<T, Length>;
 
-    template <typename T, std::size_t Length>
+    template <typename T, size_t Length>
     static auto AsBytes(Span<T, Length> s) {
         auto bytes = std::as_bytes(std::span<T, Length>(s));
         return StlSpan<const std::byte, decltype(bytes)::extent>(bytes);
     }
 
-    template <typename T, std::size_t Length>
+    template <typename T, size_t Length>
     static auto AsWritableBytes(Span<T, Length> s) {
         auto bytes = std::as_writable_bytes(std::span<T, Length>(s));
         return StlSpan<std::byte, decltype(bytes)::extent>(bytes);
@@ -133,139 +134,139 @@ struct Stl {
     };
 
     template <typename Pointer, typename Expected>
-    static constexpr bool DeducesFromPointerAndLength = requires(Pointer p, std::size_t n) {
+    static constexpr bool DeducesFromPointerAndLength = requires(Pointer p, size_t n) {
         { StlSpan(p, n) } -> std::same_as<Expected>;
     };
 };
 
-template <typename Impl, typename T, std::size_t Length = std::dynamic_extent>
+template <typename Impl, typename T, size_t Length = std::dynamic_extent>
 using SpanOf = typename Impl::template Span<T, Length>;
 
 template <typename S>
-concept ImplicitFromPointerAndLength = requires(int* p, std::size_t n) { TakeSpan<S>({p, n}); };
+concept ImplicitFromPointerAndLength = requires(int32_t* p, size_t n) { TakeSpan<S>({p, n}); };
 
 template <typename Impl>
 void PointerAndLengthConstructor() {
-    int a[4] = {1, 2, 3, 4};
-    SpanOf<Impl, int> s(a, 3);
-    SpanOf<Impl, int, 4> f(a, 4);
+    int32_t a[4] = {1, 2, 3, 4};
+    SpanOf<Impl, int32_t> s(a, 3);
+    SpanOf<Impl, int32_t, 4> f(a, 4);
     Test::Check(s.Data() == a, "Span(ptr, 3) should point at ptr");
     Test::Check(s.Size() == 3, "Span(ptr, 3) should have Size() 3");
     Test::Check(s[0] == 1 && s[2] == 3, "Span(ptr, 3) should view the first 3 elements");
-    Test::Check(f.Data() == a && f.Size() == 4, "Span<int, 4>(ptr, 4) should point at ptr and have Size() 4");
+    Test::Check(f.Data() == a && f.Size() == 4, "Span<int32_t, 4>(ptr, 4) should point at ptr and have Size() 4");
 }
 
 template <typename Impl>
 void CArrayConstructor() {
-    int a[3] = {1, 2, 3};
-    SpanOf<Impl, int> s(a);
-    SpanOf<Impl, int, 3> f(a);
-    Test::Check(s.Data() == a && s.Size() == 3, "Span<int> from int[3] should view all 3 elements");
-    Test::Check(f.Data() == a && f.Size() == 3, "Span<int, 3> from int[3] should view all 3 elements");
-    Test::Check(!std::is_constructible_v<SpanOf<Impl, int, 4>, int (&)[3]>, "Span<int, 4> from int[3] should not compile");
-    Test::Check(std::is_constructible_v<SpanOf<Impl, const int>, int (&)[3]>, "Span<const int> from int[3] should compile");
+    int32_t a[3] = {1, 2, 3};
+    SpanOf<Impl, int32_t> s(a);
+    SpanOf<Impl, int32_t, 3> f(a);
+    Test::Check(s.Data() == a && s.Size() == 3, "Span<int32_t> from int32_t[3] should view all 3 elements");
+    Test::Check(f.Data() == a && f.Size() == 3, "Span<int32_t, 3> from int32_t[3] should view all 3 elements");
+    Test::Check(!std::is_constructible_v<SpanOf<Impl, int32_t, 4>, int32_t (&)[3]>, "Span<int32_t, 4> from int32_t[3] should not compile");
+    Test::Check(std::is_constructible_v<SpanOf<Impl, const int32_t>, int32_t (&)[3]>, "Span<const int32_t> from int32_t[3] should compile");
 }
 
 template <typename Impl>
 void StdArrayConstructor() {
-    std::array<int, 3> a = {1, 2, 3};
-    SpanOf<Impl, int> s(a);
-    SpanOf<Impl, int, 3> f(a);
-    Test::Check(s.Data() == a.data() && s.Size() == 3, "Span<int> from std::array<int, 3> should view all 3 elements");
-    Test::Check(f.Data() == a.data() && f.Size() == 3, "Span<int, 3> from std::array<int, 3> should view all 3 elements");
+    std::array<int32_t, 3> a = {1, 2, 3};
+    SpanOf<Impl, int32_t> s(a);
+    SpanOf<Impl, int32_t, 3> f(a);
+    Test::Check(s.Data() == a.data() && s.Size() == 3, "Span<int32_t> from std::array<int32_t, 3> should view all 3 elements");
+    Test::Check(f.Data() == a.data() && f.Size() == 3, "Span<int32_t, 3> from std::array<int32_t, 3> should view all 3 elements");
     Test::Check(
-        !std::is_constructible_v<SpanOf<Impl, int, 4>, std::array<int, 3>&>,
-        "Span<int, 4> from std::array<int, 3> should not compile");
+        !std::is_constructible_v<SpanOf<Impl, int32_t, 4>, std::array<int32_t, 3>&>,
+        "Span<int32_t, 4> from std::array<int32_t, 3> should not compile");
     Test::Check(
-        std::is_constructible_v<SpanOf<Impl, const int>, std::array<int, 3>&>,
-        "Span<const int> from std::array<int, 3> should compile");
+        std::is_constructible_v<SpanOf<Impl, const int32_t>, std::array<int32_t, 3>&>,
+        "Span<const int32_t> from std::array<int32_t, 3> should compile");
 }
 
 template <typename Impl>
 void ConvertingConstructor() {
-    int a[4] = {1, 2, 3, 4};
-    SpanOf<Impl, int, 4> f(a);
-    SpanOf<Impl, int> s(a, 4);
-    SpanOf<Impl, const int> fromStatic(f);
-    SpanOf<Impl, const int> fromDynamic(s);
-    Test::Check(fromStatic.Data() == a && fromStatic.Size() == 4, "Span<const int> from Span<int, 4> should view the same 4 elements");
-    Test::Check(fromDynamic.Data() == a && fromDynamic.Size() == 4, "Span<const int> from Span<int> should view the same 4 elements");
+    int32_t a[4] = {1, 2, 3, 4};
+    SpanOf<Impl, int32_t, 4> f(a);
+    SpanOf<Impl, int32_t> s(a, 4);
+    SpanOf<Impl, const int32_t> fromStatic(f);
+    SpanOf<Impl, const int32_t> fromDynamic(s);
+    Test::Check(fromStatic.Data() == a && fromStatic.Size() == 4, "Span<const int32_t> from Span<int32_t, 4> should view the same 4 elements");
+    Test::Check(fromDynamic.Data() == a && fromDynamic.Size() == 4, "Span<const int32_t> from Span<int32_t> should view the same 4 elements");
     Test::Check(
-        std::is_constructible_v<SpanOf<Impl, const int>, SpanOf<Impl, int>>,
-        "Span<int> to Span<const int> should compile");
+        std::is_constructible_v<SpanOf<Impl, const int32_t>, SpanOf<Impl, int32_t>>,
+        "Span<int32_t> to Span<const int32_t> should compile");
     Test::Check(
-        !std::is_constructible_v<SpanOf<Impl, int>, SpanOf<Impl, const int>>,
-        "Span<const int> to Span<int> should not compile");
+        !std::is_constructible_v<SpanOf<Impl, int32_t>, SpanOf<Impl, const int32_t>>,
+        "Span<const int32_t> to Span<int32_t> should not compile");
     Test::Check(
-        std::is_constructible_v<SpanOf<Impl, int>, SpanOf<Impl, int, 4>>,
-        "Span<int, 4> to Span<int> should compile");
+        std::is_constructible_v<SpanOf<Impl, int32_t>, SpanOf<Impl, int32_t, 4>>,
+        "Span<int32_t, 4> to Span<int32_t> should compile");
     Test::Check(
-        !std::is_constructible_v<SpanOf<Impl, int, 3>, SpanOf<Impl, int, 4>>,
-        "Span<int, 4> to Span<int, 3> should not compile");
+        !std::is_constructible_v<SpanOf<Impl, int32_t, 3>, SpanOf<Impl, int32_t, 4>>,
+        "Span<int32_t, 4> to Span<int32_t, 3> should not compile");
 }
 
 template <typename Impl>
 void Explicit() {
     Test::Check(
-        ImplicitFromPointerAndLength<SpanOf<Impl, int>>,
-        "Span<int> from (ptr, n) should not be explicit");
+        ImplicitFromPointerAndLength<SpanOf<Impl, int32_t>>,
+        "Span<int32_t> from (ptr, n) should not be explicit");
     Test::Check(
-        !ImplicitFromPointerAndLength<SpanOf<Impl, int, 4>>,
-        "Span<int, 4> from (ptr, n) should be explicit");
+        !ImplicitFromPointerAndLength<SpanOf<Impl, int32_t, 4>>,
+        "Span<int32_t, 4> from (ptr, n) should be explicit");
     Test::Check(
-        std::is_constructible_v<SpanOf<Impl, int, 4>, SpanOf<Impl, int>>,
-        "Span<int, 4>(someDynamicSpan) should compile");
+        std::is_constructible_v<SpanOf<Impl, int32_t, 4>, SpanOf<Impl, int32_t>>,
+        "Span<int32_t, 4>(someDynamicSpan) should compile");
     Test::Check(
-        !std::is_convertible_v<SpanOf<Impl, int>, SpanOf<Impl, int, 4>>,
-        "Span<int, 4> s = someDynamicSpan; should not compile (explicit)");
+        !std::is_convertible_v<SpanOf<Impl, int32_t>, SpanOf<Impl, int32_t, 4>>,
+        "Span<int32_t, 4> s = someDynamicSpan; should not compile (explicit)");
     Test::Check(
-        std::is_convertible_v<SpanOf<Impl, int, 4>, SpanOf<Impl, int>>,
-        "Span<int> s = someSpanOf4; should compile (not explicit)");
-    Test::Check(std::is_convertible_v<int (&)[4], SpanOf<Impl, int, 4>>, "Span<int, 4> s = intArray4; should compile (not explicit)");
+        std::is_convertible_v<SpanOf<Impl, int32_t, 4>, SpanOf<Impl, int32_t>>,
+        "Span<int32_t> s = someSpanOf4; should compile (not explicit)");
+    Test::Check(std::is_convertible_v<int32_t (&)[4], SpanOf<Impl, int32_t, 4>>, "Span<int32_t, 4> s = intArray4; should compile (not explicit)");
     Test::Check(
-        std::is_convertible_v<std::array<int, 4>&, SpanOf<Impl, int, 4>>,
-        "Span<int, 4> s = stdArray4; should compile (not explicit)");
+        std::is_convertible_v<std::array<int32_t, 4>&, SpanOf<Impl, int32_t, 4>>,
+        "Span<int32_t, 4> s = stdArray4; should compile (not explicit)");
 }
 
 template <typename Impl>
 void Subscript() {
-    int a[3] = {1, 2, 3};
-    SpanOf<Impl, int> s(a);
-    const SpanOf<Impl, int> c(a);
+    int32_t a[3] = {1, 2, 3};
+    SpanOf<Impl, int32_t> s(a);
+    const SpanOf<Impl, int32_t> c(a);
     Test::Check(s[0] == 1 && s[1] == 2 && s[2] == 3, "s[i] should read the viewed elements");
     s[1] = 20;
     Test::Check(a[1] == 20, "Writing s[i] should change the original array");
     c[2] = 30;
-    Test::Check(a[2] == 30, "Writing through a const Span<int> should change the original array (shallow const)");
-    Test::Check(std::is_same_v<decltype(c[0]), int&>, "s[i] on a const Span<int> should return int&");
+    Test::Check(a[2] == 30, "Writing through a const Span<int32_t> should change the original array (shallow const)");
+    Test::Check(std::is_same_v<decltype(c[0]), int32_t&>, "s[i] on a const Span<int32_t> should return int32_t&");
 
-    SpanOf<Impl, int> copy = s;
+    SpanOf<Impl, int32_t> copy = s;
     copy[0] = 10;
     Test::Check(a[0] == 10 && s[0] == 10, "A copy of a span should view the same elements");
 }
 
 template <typename Impl>
 void DataSizeSizeBytes() {
-    int a[4] = {1, 2, 3, 4};
-    SpanOf<Impl, int> s(a, 3);
-    SpanOf<Impl, int, 4> f(a);
+    int32_t a[4] = {1, 2, 3, 4};
+    SpanOf<Impl, int32_t> s(a, 3);
+    SpanOf<Impl, int32_t, 4> f(a);
     Test::Check(s.Data() == a && f.Data() == a, "Data() should point at the first element");
-    Test::Check(s.Size() == 3 && f.Size() == 4, "Size() should be 3 for Span<int>(a, 3) and 4 for Span<int, 4>");
-    Test::Check(s.SizeBytes() == 3 * sizeof(int), "SizeBytes() of Span<int>(a, 3) should be 3 * sizeof(int)");
-    Test::Check(f.SizeBytes() == 4 * sizeof(int), "SizeBytes() of Span<int, 4> should be 4 * sizeof(int)");
+    Test::Check(s.Size() == 3 && f.Size() == 4, "Size() should be 3 for Span<int32_t>(a, 3) and 4 for Span<int32_t, 4>");
+    Test::Check(s.SizeBytes() == 3 * sizeof(int32_t), "SizeBytes() of Span<int32_t>(a, 3) should be 3 * sizeof(int32_t)");
+    Test::Check(f.SizeBytes() == 4 * sizeof(int32_t), "SizeBytes() of Span<int32_t, 4> should be 4 * sizeof(int32_t)");
 }
 
 template <typename Impl>
 void BeginEnd() {
-    int a[3] = {3, 1, 2};
-    SpanOf<Impl, int> s(a);
-    const SpanOf<Impl, int, 3> f(a);
+    int32_t a[3] = {3, 1, 2};
+    SpanOf<Impl, int32_t> s(a);
+    const SpanOf<Impl, int32_t, 3> f(a);
     Test::Check(&*s.begin() == a, "begin() should point at the first element");
     Test::Check(s.end() - s.begin() == 3, "end() - begin() should be Size()");
-    Test::Check(f.end() - f.begin() == 3, "end() - begin() on a const Span<int, 3> should be 3");
+    Test::Check(f.end() - f.begin() == 3, "end() - begin() on a const Span<int32_t, 3> should be 3");
 
-    int sum = 0;
-    for (int value : s) {
+    int32_t sum = 0;
+    for (int32_t value : s) {
         sum += value;
     }
     Test::Check(sum == 6, "range-for should visit every element");
@@ -276,13 +277,13 @@ void BeginEnd() {
 
 template <typename Impl>
 void FirstLastSubspan() {
-    int a[5] = {1, 2, 3, 4, 5};
-    SpanOf<Impl, int, 5> s(a);
+    int32_t a[5] = {1, 2, 3, 4, 5};
+    SpanOf<Impl, int32_t, 5> s(a);
     auto first = s.First(2);
     auto last = s.Last(2);
     auto middle = s.Subspan(1, 3);
     auto rest = s.Subspan(2);
-    Test::Check(std::is_same_v<decltype(first), SpanOf<Impl, int>>, "First(length) should return a dynamic Span<int>");
+    Test::Check(std::is_same_v<decltype(first), SpanOf<Impl, int32_t>>, "First(length) should return a dynamic Span<int32_t>");
     Test::Check(first.Data() == a && first.Size() == 2, "First(2) should view {1, 2} in place");
     Test::Check(last.Data() == a + 3 && last.Size() == 2, "Last(2) should view {4, 5} in place");
     Test::Check(middle.Data() == a + 1 && middle.Size() == 3, "Subspan(1, 3) should view {2, 3, 4} in place");
@@ -293,56 +294,56 @@ void FirstLastSubspan() {
 
 template <typename Impl>
 void FirstN() {
-    int a[5] = {1, 2, 3, 4, 5};
-    SpanOf<Impl, int> s(a, 5);
+    int32_t a[5] = {1, 2, 3, 4, 5};
+    SpanOf<Impl, int32_t> s(a, 5);
     auto first = s.template First<2>();
-    Test::Check(std::is_same_v<decltype(first), SpanOf<Impl, int, 2>>, "First<2>() should return Span<int, 2>");
+    Test::Check(std::is_same_v<decltype(first), SpanOf<Impl, int32_t, 2>>, "First<2>() should return Span<int32_t, 2>");
     Test::Check(first.Data() == a && first.Size() == 2, "First<2>() should view {1, 2} in place");
 }
 
 template <typename Impl>
 void StaticLengthIsNotStored() {
-    int a[4] = {1, 2, 3, 4};
+    int32_t a[4] = {1, 2, 3, 4};
     char c[1] = {'x'};
-    SpanOf<Impl, int, 4> f(a);
+    SpanOf<Impl, int32_t, 4> f(a);
     SpanOf<Impl, char, 1> one(c);
-    SpanOf<Impl, int> s(a, 3);
-    Test::Check(sizeof(SpanOf<Impl, int, 4>) == sizeof(int*), "sizeof(Span<int, 4>) should be sizeof(int*), no stored size");
+    SpanOf<Impl, int32_t> s(a, 3);
+    Test::Check(sizeof(SpanOf<Impl, int32_t, 4>) == sizeof(int32_t*), "sizeof(Span<int32_t, 4>) should be sizeof(int32_t*), no stored size");
     Test::Check(sizeof(SpanOf<Impl, char, 1>) == sizeof(char*), "sizeof(Span<char, 1>) should be sizeof(char*), no stored size");
     Test::Check(
-        sizeof(SpanOf<Impl, int>) == sizeof(int*) + sizeof(std::size_t),
-        "sizeof(Span<int>) should be sizeof(int*) + sizeof(std::size_t)");
-    Test::Check(f.Size() == 4, "Size() of a static Span<int, 4> should be 4");
+        sizeof(SpanOf<Impl, int32_t>) == sizeof(int32_t*) + sizeof(size_t),
+        "sizeof(Span<int32_t>) should be sizeof(int32_t*) + sizeof(size_t)");
+    Test::Check(f.Size() == 4, "Size() of a static Span<int32_t, 4> should be 4");
     Test::Check(one.Size() == 1, "Size() of a static Span<char, 1> should be 1");
-    Test::Check(s.Size() == 3, "Size() of a dynamic Span<int>(a, 3) should be 3");
+    Test::Check(s.Size() == 3, "Size() of a dynamic Span<int32_t>(a, 3) should be 3");
 }
 
 template <typename Impl>
 void DeductionGuides() {
     Test::Check(
-        Impl::template DeducesFrom<int[3], SpanOf<Impl, int, 3>>,
-        "Span s = intArray3; should deduce Span<int, 3>");
+        Impl::template DeducesFrom<int32_t[3], SpanOf<Impl, int32_t, 3>>,
+        "Span s = intArray3; should deduce Span<int32_t, 3>");
     Test::Check(
-        Impl::template DeducesFrom<std::array<int, 3>, SpanOf<Impl, int, 3>>,
-        "Span s = stdArray3; should deduce Span<int, 3>");
+        Impl::template DeducesFrom<std::array<int32_t, 3>, SpanOf<Impl, int32_t, 3>>,
+        "Span s = stdArray3; should deduce Span<int32_t, 3>");
     Test::Check(
-        Impl::template DeducesFromPointerAndLength<int*, SpanOf<Impl, int>>,
-        "Span s(ptr, n); should deduce Span<int>");
+        Impl::template DeducesFromPointerAndLength<int32_t*, SpanOf<Impl, int32_t>>,
+        "Span s(ptr, n); should deduce Span<int32_t>");
 }
 
 template <typename Impl>
 void AsBytesAsWritableBytes() {
-    int a[2] = {1, 2};
-    SpanOf<Impl, int, 2> f(a);
-    SpanOf<Impl, int> s(a, 2);
+    int32_t a[2] = {1, 2};
+    SpanOf<Impl, int32_t, 2> f(a);
+    SpanOf<Impl, int32_t> s(a, 2);
     auto bytes = Impl::AsBytes(f);
     auto dynamicBytes = Impl::AsBytes(s);
     Test::Check(
-        std::is_same_v<decltype(bytes), SpanOf<Impl, const std::byte, 2 * sizeof(int)>>,
-        "AsBytes(Span<int, 2>) should return Span<const std::byte, 2 * sizeof(int)>");
+        std::is_same_v<decltype(bytes), SpanOf<Impl, const std::byte, 2 * sizeof(int32_t)>>,
+        "AsBytes(Span<int32_t, 2>) should return Span<const std::byte, 2 * sizeof(int32_t)>");
     Test::Check(
         std::is_same_v<decltype(dynamicBytes), SpanOf<Impl, const std::byte>>,
-        "AsBytes(Span<int>) should return a dynamic Span<const std::byte>");
+        "AsBytes(Span<int32_t>) should return a dynamic Span<const std::byte>");
     Test::Check(
         bytes.Data() == reinterpret_cast<const std::byte*>(a) && bytes.Size() == sizeof(a),
         "AsBytes should view the same memory, sizeof(a) bytes long");
@@ -350,16 +351,16 @@ void AsBytesAsWritableBytes() {
 
     auto writable = Impl::AsWritableBytes(f);
     Test::Check(
-        std::is_same_v<decltype(writable), SpanOf<Impl, std::byte, 2 * sizeof(int)>>,
-        "AsWritableBytes(Span<int, 2>) should return Span<std::byte, 2 * sizeof(int)>");
-    for (std::size_t i = 0; i < sizeof(int); ++i) {
+        std::is_same_v<decltype(writable), SpanOf<Impl, std::byte, 2 * sizeof(int32_t)>>,
+        "AsWritableBytes(Span<int32_t, 2>) should return Span<std::byte, 2 * sizeof(int32_t)>");
+    for (size_t i = 0; i < sizeof(int32_t); ++i) {
         writable[i] = std::byte{0};
     }
-    Test::Check(a[0] == 0 && a[1] == 2, "Zeroing the first int's bytes through AsWritableBytes should set a[0] to 0");
-    Test::Check(Impl::template CanAsWritableBytes<SpanOf<Impl, int>>, "AsWritableBytes(Span<int>) should compile");
+    Test::Check(a[0] == 0 && a[1] == 2, "Zeroing the first int32_t's bytes through AsWritableBytes should set a[0] to 0");
+    Test::Check(Impl::template CanAsWritableBytes<SpanOf<Impl, int32_t>>, "AsWritableBytes(Span<int32_t>) should compile");
     Test::Check(
-        !Impl::template CanAsWritableBytes<SpanOf<Impl, const int>>,
-        "AsWritableBytes(Span<const int>) should not compile");
+        !Impl::template CanAsWritableBytes<SpanOf<Impl, const int32_t>>,
+        "AsWritableBytes(Span<const int32_t>) should not compile");
 }
 
 }  // namespace tests::span

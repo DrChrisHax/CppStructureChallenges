@@ -10,10 +10,10 @@
 
 namespace solutions::array {
 
-template <typename T, std::size_t N>
+template <typename T, size_t N>
 struct Array {
     using ValueType = T;
-    using SizeType = std::size_t;
+    using SizeType = size_t;
     using Iterator = T*;
     using ConstIterator = const T*;
 

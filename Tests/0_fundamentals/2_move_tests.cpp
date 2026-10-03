@@ -1,5 +1,6 @@
 // Created by Chris Manlove
 
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 
@@ -10,7 +11,7 @@
 namespace tests::move {
 
 struct Widget {
-    int Value = 0;
+    int32_t Value = 0;
 };
 
 class MoveOnly {
@@ -34,8 +35,8 @@ struct ThrowingMove {
         ++Moves;
     }
 
-    inline static int Copies = 0;
-    inline static int Moves = 0;
+    inline static int32_t Copies = 0;
+    inline static int32_t Moves = 0;
 };
 
 struct ThrowingMoveOnly {
@@ -82,9 +83,9 @@ struct Stl {
 
 template <typename Impl>
 void LValue() {
-    int x = 1;
+    int32_t x = 1;
     Impl::Move(x);
-    Test::Check(std::is_same_v<decltype(Impl::Move(x)), int&&>, "Move(x) should return int&&");
+    Test::Check(std::is_same_v<decltype(Impl::Move(x)), int32_t&&>, "Move(x) should return int32_t&&");
 }
 
 template <typename Impl>
@@ -95,10 +96,10 @@ void RValue() {
 
 template <typename Impl>
 void LValueReference() {
-    const int x = 1;
-    const int& y = x;
+    const int32_t x = 1;
+    const int32_t& y = x;
     Impl::Move(y);
-    Test::Check(std::is_same_v<decltype(Impl::Move(y)), const int&&>, "Move(y) should return const int&&");
+    Test::Check(std::is_same_v<decltype(Impl::Move(y)), const int32_t&&>, "Move(y) should return const int32_t&&");
 }
 
 template <typename Impl>
@@ -113,16 +114,16 @@ void NonCopyableType() {
 
 template <typename Impl>
 void CStyleArray() {
-    int arr[3] = {1, 2, 3};
+    int32_t arr[3] = {1, 2, 3};
     Impl::Move(arr);
-    Test::Check(std::is_same_v<decltype(Impl::Move(arr)), int(&&)[3]>, "Move(arr) should return int(&&)[3]");
+    Test::Check(std::is_same_v<decltype(Impl::Move(arr)), int32_t(&&)[3]>, "Move(arr) should return int32_t(&&)[3]");
 }
 
 template <typename Impl>
 void IfNoexceptInt() {
-    int x = 1;
+    int32_t x = 1;
     Impl::MoveIfNoexcept(x);
-    Test::Check(std::is_same_v<decltype(Impl::MoveIfNoexcept(x)), int&&>, "MoveIfNoexcept(x) should return int&&");
+    Test::Check(std::is_same_v<decltype(Impl::MoveIfNoexcept(x)), int32_t&&>, "MoveIfNoexcept(x) should return int32_t&&");
 }
 
 template <typename Impl>
@@ -171,12 +172,12 @@ Test2::Test2()
 void Test2::RunTests() {
     using namespace tests::move;
 
-    Run("L value: int x = 1", 1, LValue<User>, LValue<Solution>, LValue<Stl>);
+    Run("L value: int32_t x = 1", 1, LValue<User>, LValue<Solution>, LValue<Stl>);
     Run("R value: Move(Widget{})", 1, RValue<User>, RValue<Solution>, RValue<Stl>);
-    Run("L value reference: const int x = 1; const int& y = x", 1, LValueReference<User>, LValueReference<Solution>, LValueReference<Stl>);
+    Run("L value reference: const int32_t x = 1; const int32_t& y = x", 1, LValueReference<User>, LValueReference<Solution>, LValueReference<Stl>);
     Run("Non-copyable type: MoveOnly", 1, NonCopyableType<User>, NonCopyableType<Solution>, NonCopyableType<Stl>);
-    Run("C-style array: int arr[3] = {1, 2, 3}", 1, CStyleArray<User>, CStyleArray<Solution>, CStyleArray<Stl>);
-    Run("MoveIfNoexcept int: int x = 1", 1, IfNoexceptInt<User>, IfNoexceptInt<Solution>, IfNoexceptInt<Stl>);
+    Run("C-style array: int32_t arr[3] = {1, 2, 3}", 1, CStyleArray<User>, CStyleArray<Solution>, CStyleArray<Stl>);
+    Run("MoveIfNoexcept int32_t: int32_t x = 1", 1, IfNoexceptInt<User>, IfNoexceptInt<Solution>, IfNoexceptInt<Stl>);
     Run("MoveIfNoexcept nothrow move: Widget", 1, IfNoexceptNothrowMove<User>, IfNoexceptNothrowMove<Solution>, IfNoexceptNothrowMove<Stl>);
     Run("MoveIfNoexcept throwing move, copyable: ThrowingMove", 1, IfNoexceptThrowingMove<User>, IfNoexceptThrowingMove<Solution>, IfNoexceptThrowingMove<Stl>);
     Run("MoveIfNoexcept throwing move, move-only: ThrowingMoveOnly", 1, IfNoexceptThrowingMoveOnly<User>, IfNoexceptThrowingMoveOnly<Solution>, IfNoexceptThrowingMoveOnly<Stl>);

@@ -19,7 +19,7 @@
 // Hint for the array overload's noexcept (this is template trivia, not the point of the challenge, so here's the
 // answer): use noexcept(std::is_nothrow_swappable_v<T>).
 //
-//   template <typename T, std::size_t N>
+//   template <typename T, size_t N>
 //   constexpr void Swap(T (&a)[N], T (&b)[N]) noexcept(std::is_nothrow_swappable_v<T>)
 //
 // Why not the obvious options? For a 2D array like int[2][2], T is int[2], an array itself:
@@ -91,7 +91,7 @@ constexpr void Swap(T& a, T& b) {
     Test::Todo();
 }
 
-template <typename T, std::size_t N>
+template <typename T, size_t N>
 constexpr void Swap(T (&a)[N], T (&b)[N]) {
     // Your code here.
     Test::Todo();

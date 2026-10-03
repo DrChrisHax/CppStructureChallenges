@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -13,10 +14,10 @@
 
 namespace tests::array {
 
-template <typename T, std::size_t N>
+template <typename T, size_t N>
 struct StlArray : std::array<T, N> {
     using ValueType = T;
-    using SizeType = std::size_t;
+    using SizeType = size_t;
     using Iterator = typename std::array<T, N>::iterator;
     using ConstIterator = typename std::array<T, N>::const_iterator;
 
@@ -38,40 +39,40 @@ struct ThrowingMove {
 };
 
 struct User {
-    template <typename T, std::size_t N>
+    template <typename T, size_t N>
     using Array = challenges::array::Array<T, N>;
 };
 
 struct Solution {
-    template <typename T, std::size_t N>
+    template <typename T, size_t N>
     using Array = solutions::array::Array<T, N>;
 };
 
 struct Stl {
-    template <typename T, std::size_t N>
+    template <typename T, size_t N>
     using Array = StlArray<T, N>;
 };
 
-template <typename Impl, typename T, std::size_t N>
+template <typename Impl, typename T, size_t N>
 using ArrayOf = typename Impl::template Array<T, N>;
 
 template <typename Impl>
 void Subscript() {
-    ArrayOf<Impl, int, 3> a = {1, 2, 3};
-    const ArrayOf<Impl, int, 3>& c = a;
+    ArrayOf<Impl, int32_t, 3> a = {1, 2, 3};
+    const ArrayOf<Impl, int32_t, 3>& c = a;
     Test::Check(a[0] == 1 && a[1] == 2 && a[2] == 3, "a[i] should read back the values written");
     Test::Check(c[2] == 3, "a[i] on a const Array should read the element");
-    Test::Check(std::is_same_v<decltype(c[0]), const int&>, "a[i] on a const Array should return const int&");
+    Test::Check(std::is_same_v<decltype(c[0]), const int32_t&>, "a[i] on a const Array should return const int32_t&");
 }
 
 template <typename Impl>
 void At() {
-    ArrayOf<Impl, int, 3> a = {1, 2, 3};
-    const ArrayOf<Impl, int, 3>& c = a;
+    ArrayOf<Impl, int32_t, 3> a = {1, 2, 3};
+    const ArrayOf<Impl, int32_t, 3>& c = a;
     a.At(1) = 20;
     Test::Check(a.At(0) == 1 && a.At(1) == 20 && a.At(2) == 3, "At(i) should read and write the elements");
     Test::Check(c.At(2) == 3, "At(i) on a const Array should read the element");
-    Test::Check(std::is_same_v<decltype(c.At(0)), const int&>, "At(i) on a const Array should return const int&");
+    Test::Check(std::is_same_v<decltype(c.At(0)), const int32_t&>, "At(i) on a const Array should return const int32_t&");
 
     bool threw = false;
     try {
@@ -84,26 +85,26 @@ void At() {
 
 template <typename Impl>
 void Data() {
-    ArrayOf<Impl, int, 3> a = {1, 2, 3};
-    const ArrayOf<Impl, int, 3>& c = a;
+    ArrayOf<Impl, int32_t, 3> a = {1, 2, 3};
+    const ArrayOf<Impl, int32_t, 3>& c = a;
     Test::Check(a.Data() == &a[0], "Data() should point at the first element");
     Test::Check(a.Data()[2] == 3, "Data() should point at the elements, stored next to each other");
-    Test::Check(std::is_same_v<decltype(c.Data()), const int*>, "Data() on a const Array should return const int*");
+    Test::Check(std::is_same_v<decltype(c.Data()), const int32_t*>, "Data() on a const Array should return const int32_t*");
 }
 
 template <typename Impl>
 void Size() {
-    ArrayOf<Impl, int, 3> a;
-    ArrayOf<Impl, int, 5> b;
-    Test::Check(a.Size() == 3, "Size() of Array<int, 3> should be 3");
-    Test::Check(b.Size() == 5, "Size() of Array<int, 5> should be 5");
+    ArrayOf<Impl, int32_t, 3> a;
+    ArrayOf<Impl, int32_t, 5> b;
+    Test::Check(a.Size() == 3, "Size() of Array<int32_t, 3> should be 3");
+    Test::Check(b.Size() == 5, "Size() of Array<int32_t, 5> should be 5");
 }
 
 template <typename Impl>
 void Begin() {
-    ArrayOf<Impl, int, 3> a = {1, 2, 3};
-    const ArrayOf<Impl, int, 3>& c = a;
-    using ConstIterator = typename ArrayOf<Impl, int, 3>::ConstIterator;
+    ArrayOf<Impl, int32_t, 3> a = {1, 2, 3};
+    const ArrayOf<Impl, int32_t, 3>& c = a;
+    using ConstIterator = typename ArrayOf<Impl, int32_t, 3>::ConstIterator;
     Test::Check(&*a.begin() == &a[0], "begin() should point at the first element");
     Test::Check(&*c.begin() == &a[0], "begin() on a const Array should point at the first element");
     Test::Check(std::is_same_v<decltype(c.begin()), ConstIterator>, "begin() on a const Array should return ConstIterator");
@@ -111,9 +112,9 @@ void Begin() {
 
 template <typename Impl>
 void End() {
-    ArrayOf<Impl, int, 3> a = {1, 2, 3};
-    const ArrayOf<Impl, int, 3>& c = a;
-    using ConstIterator = typename ArrayOf<Impl, int, 3>::ConstIterator;
+    ArrayOf<Impl, int32_t, 3> a = {1, 2, 3};
+    const ArrayOf<Impl, int32_t, 3>& c = a;
+    using ConstIterator = typename ArrayOf<Impl, int32_t, 3>::ConstIterator;
     Test::Check(&*(a.end() - 1) == &a[2], "end() should point one past the last element");
     Test::Check(a.end() - a.begin() == 3, "end() - begin() should be 3");
     Test::Check(c.end() - c.begin() == 3, "end() - begin() on a const Array should be 3");
@@ -122,8 +123,8 @@ void End() {
 
 template <typename Impl>
 void Swap() {
-    ArrayOf<Impl, int, 3> a = {1, 2, 3};
-    ArrayOf<Impl, int, 3> b = {4, 5, 6};
+    ArrayOf<Impl, int32_t, 3> a = {1, 2, 3};
+    ArrayOf<Impl, int32_t, 3> b = {4, 5, 6};
     ArrayOf<Impl, ThrowingMove, 2> x;
     ArrayOf<Impl, ThrowingMove, 2> y;
     a.Swap(b);
@@ -135,15 +136,15 @@ void Swap() {
 
 template <typename Impl>
 void UsingTheArray() {
-    ArrayOf<Impl, int, 3> a = {3, 1, 2};
-    Test::Check(std::is_aggregate_v<ArrayOf<Impl, int, 3>>, "Array must be an aggregate so brace init works");
+    ArrayOf<Impl, int32_t, 3> a = {3, 1, 2};
+    Test::Check(std::is_aggregate_v<ArrayOf<Impl, int32_t, 3>>, "Array must be an aggregate so brace init works");
     const char* start = reinterpret_cast<const char*>(&a);
     const char* first = reinterpret_cast<const char*>(a.Data());
-    Test::Check(sizeof(a) == sizeof(int[3]), "sizeof(Array<int, 3>) should be sizeof(int[3]), no extra storage");
-    Test::Check(first >= start && first + sizeof(int[3]) <= start + sizeof(a), "The elements should live inside the object");
+    Test::Check(sizeof(a) == sizeof(int32_t[3]), "sizeof(Array<int32_t, 3>) should be sizeof(int32_t[3]), no extra storage");
+    Test::Check(first >= start && first + sizeof(int32_t[3]) <= start + sizeof(a), "The elements should live inside the object");
 
-    int sum = 0;
-    for (int value : a) {
+    int32_t sum = 0;
+    for (int32_t value : a) {
         sum += value;
     }
     Test::Check(sum == 6, "range-for should visit every element");
@@ -151,7 +152,7 @@ void UsingTheArray() {
     std::sort(a.begin(), a.end());
     Test::Check(a[0] == 1 && a[1] == 2 && a[2] == 3, "std::sort(begin(), end()) should sort to {1, 2, 3}");
 
-    ArrayOf<Impl, int, 3> copy = a;
+    ArrayOf<Impl, int32_t, 3> copy = a;
     copy[0] = 10;
     Test::Check(a[0] == 1 && copy[0] == 10, "A copy should be a separate array");
 }

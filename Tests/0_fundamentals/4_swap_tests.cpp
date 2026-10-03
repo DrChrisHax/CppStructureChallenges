@@ -1,6 +1,7 @@
 // Created by Chris Manlove
 
 #include <cstddef>
+#include <cstdint>
 #include <utility>
 
 #include "0_fundamentals/4_swap_tests.hpp"
@@ -10,7 +11,7 @@
 namespace tests::swap {
 
 struct Counter {
-    Counter(int value)
+    Counter(int32_t value)
         : Value(value)
     {}
 
@@ -30,12 +31,12 @@ struct Counter {
 
     Counter& operator=(Counter&& other) noexcept = default;
 
-    inline static int Copies = 0;
-    int Value = 0;
+    inline static int32_t Copies = 0;
+    int32_t Value = 0;
 };
 
 struct MoveOnly {
-    MoveOnly(int value)
+    MoveOnly(int32_t value)
         : Value(value)
     {}
 
@@ -45,7 +46,7 @@ struct MoveOnly {
     MoveOnly& operator=(const MoveOnly&) = delete;
     MoveOnly& operator=(MoveOnly&&) = default;
 
-    int Value = 0;
+    int32_t Value = 0;
 };
 
 struct ThrowingMove {
@@ -63,7 +64,7 @@ struct User {
         challenges::swap::Swap(a, b);
     }
 
-    template <typename T, std::size_t N>
+    template <typename T, size_t N>
     static void Swap(T (&a)[N], T (&b)[N]) noexcept(noexcept(challenges::swap::Swap(a, b))) {
         challenges::swap::Swap(a, b);
     }
@@ -81,7 +82,7 @@ struct Solution {
         solutions::swap::Swap(a, b);
     }
 
-    template <typename T, std::size_t N>
+    template <typename T, size_t N>
     static void Swap(T (&a)[N], T (&b)[N]) noexcept(noexcept(solutions::swap::Swap(a, b))) {
         solutions::swap::Swap(a, b);
     }
@@ -99,7 +100,7 @@ struct Stl {
         std::swap(a, b);
     }
 
-    template <typename T, std::size_t N>
+    template <typename T, size_t N>
     static void Swap(T (&a)[N], T (&b)[N]) noexcept(noexcept(std::swap(a, b))) {
         std::swap(a, b);
     }
@@ -112,7 +113,7 @@ struct Stl {
 
 template <typename Impl>
 struct Owner {
-    Owner(int* ptr)
+    Owner(int32_t* ptr)
         : Ptr(ptr)
     {}
 
@@ -120,13 +121,13 @@ struct Owner {
         : Ptr(Impl::Exchange(other.Ptr, nullptr))
     {}
 
-    int* Ptr = nullptr;
+    int32_t* Ptr = nullptr;
 };
 
 template <typename Impl>
 void Ints() {
-    int x = 1;
-    int y = 2;
+    int32_t x = 1;
+    int32_t y = 2;
     Impl::Swap(x, y);
     Test::Check(x == 2 && y == 1, "Swap(x, y) should leave x == 2 and y == 1");
 }
@@ -151,8 +152,8 @@ void MoveOnlyType() {
 
 template <typename Impl>
 void SwapNoexcept() {
-    int x = 1;
-    int y = 2;
+    int32_t x = 1;
+    int32_t y = 2;
     ThrowingMove a;
     ThrowingMove b;
     Impl::Swap(x, y);
@@ -162,8 +163,8 @@ void SwapNoexcept() {
 
 template <typename Impl>
 void Arrays() {
-    int a[3] = {1, 2, 3};
-    int b[3] = {4, 5, 6};
+    int32_t a[3] = {1, 2, 3};
+    int32_t b[3] = {4, 5, 6};
     Impl::Swap(a, b);
     Test::Check(a[0] == 4 && a[1] == 5 && a[2] == 6, "Swap(a, b) should leave a == {4, 5, 6}");
     Test::Check(b[0] == 1 && b[1] == 2 && b[2] == 3, "Swap(a, b) should leave b == {1, 2, 3}");
@@ -171,8 +172,8 @@ void Arrays() {
 
 template <typename Impl>
 void MultidimensionalArrays() {
-    int a[2][2] = {{1, 2}, {3, 4}};
-    int b[2][2] = {{5, 6}, {7, 8}};
+    int32_t a[2][2] = {{1, 2}, {3, 4}};
+    int32_t b[2][2] = {{5, 6}, {7, 8}};
     Impl::Swap(a, b);
     Test::Check(a[0][0] == 5 && a[0][1] == 6 && a[1][0] == 7 && a[1][1] == 8, "Swap(a, b) should leave a == {{5, 6}, {7, 8}}");
     Test::Check(b[0][0] == 1 && b[0][1] == 2 && b[1][0] == 3 && b[1][1] == 4, "Swap(a, b) should leave b == {{1, 2}, {3, 4}}");
@@ -180,30 +181,30 @@ void MultidimensionalArrays() {
 
 template <typename Impl>
 void ArraySwapNoexcept() {
-    int x[3] = {1, 2, 3};
-    int y[3] = {4, 5, 6};
+    int32_t x[3] = {1, 2, 3};
+    int32_t y[3] = {4, 5, 6};
     ThrowingMove a[3];
     ThrowingMove b[3];
     Impl::Swap(x, y);
-    Test::Check(noexcept(Impl::Swap(x, y)), "Swap on int arrays should be noexcept");
+    Test::Check(noexcept(Impl::Swap(x, y)), "Swap on int32_t arrays should be noexcept");
     Test::Check(!noexcept(Impl::Swap(a, b)), "Swap on arrays of a type whose move can throw should not be noexcept");
 }
 
 template <typename Impl>
 void MultidimensionalArraySwapNoexcept() {
-    int x[2][2] = {{1, 2}, {3, 4}};
-    int y[2][2] = {{5, 6}, {7, 8}};
+    int32_t x[2][2] = {{1, 2}, {3, 4}};
+    int32_t y[2][2] = {{5, 6}, {7, 8}};
     ThrowingMove a[2][2];
     ThrowingMove b[2][2];
     Impl::Swap(x, y);
-    Test::Check(noexcept(Impl::Swap(x, y)), "Swap on 2D int arrays should be noexcept");
+    Test::Check(noexcept(Impl::Swap(x, y)), "Swap on 2D int32_t arrays should be noexcept");
     Test::Check(!noexcept(Impl::Swap(a, b)), "Swap on 2D arrays of a type whose move can throw should not be noexcept");
 }
 
 template <typename Impl>
 void ExchangeBasic() {
-    int x = 1;
-    int old = Impl::Exchange(x, 2);
+    int32_t x = 1;
+    int32_t old = Impl::Exchange(x, 2);
     Test::Check(old == 1, "Exchange(x, 2) should return the old value 1");
     Test::Check(x == 2, "Exchange(x, 2) should leave x == 2");
 }
@@ -229,7 +230,7 @@ void ExchangeCopiesLValue() {
 
 template <typename Impl>
 void MoveConstructorIdiom() {
-    int value = 1;
+    int32_t value = 1;
     Owner<Impl> source(&value);
     Owner<Impl> destination(std::move(source));
     Test::Check(destination.Ptr == &value, "The new Owner should own the pointer");
@@ -238,7 +239,7 @@ void MoveConstructorIdiom() {
 
 template <typename Impl>
 void ExchangeNoexcept() {
-    int x = 1;
+    int32_t x = 1;
     ThrowingMove a;
     Impl::Exchange(x, 2);
     Test::Check(noexcept(Impl::Exchange(x, 2)), "Exchange on ints should be noexcept");
@@ -259,12 +260,12 @@ void Test4::RunTests() {
     Run("Ints: Swap(x, y)", 1, Ints<User>, Ints<Solution>, Ints<Stl>);
     Run("No copies: Swap(a, b) on Counter", 1, NoCopies<User>, NoCopies<Solution>, NoCopies<Stl>);
     Run("Move-only type: Swap(a, b) on MoveOnly", 1, MoveOnlyType<User>, MoveOnlyType<Solution>, MoveOnlyType<Stl>);
-    Run("Swap noexcept: int vs ThrowingMove", 1, SwapNoexcept<User>, SwapNoexcept<Solution>, SwapNoexcept<Stl>);
-    Run("Arrays: int a[3], b[3]", 1, Arrays<User>, Arrays<Solution>, Arrays<Stl>);
-    Run("Multidimensional arrays: int a[2][2], b[2][2]", 1, MultidimensionalArrays<User>, MultidimensionalArrays<Solution>, MultidimensionalArrays<Stl>);
-    Run("Array swap noexcept: int[3] vs ThrowingMove[3]", 1, ArraySwapNoexcept<User>, ArraySwapNoexcept<Solution>, ArraySwapNoexcept<Stl>);
+    Run("Swap noexcept: int32_t vs ThrowingMove", 1, SwapNoexcept<User>, SwapNoexcept<Solution>, SwapNoexcept<Stl>);
+    Run("Arrays: int32_t a[3], b[3]", 1, Arrays<User>, Arrays<Solution>, Arrays<Stl>);
+    Run("Multidimensional arrays: int32_t a[2][2], b[2][2]", 1, MultidimensionalArrays<User>, MultidimensionalArrays<Solution>, MultidimensionalArrays<Stl>);
+    Run("Array swap noexcept: int32_t[3] vs ThrowingMove[3]", 1, ArraySwapNoexcept<User>, ArraySwapNoexcept<Solution>, ArraySwapNoexcept<Stl>);
     Run(
-        "Multidimensional array swap noexcept: int[2][2] vs ThrowingMove[2][2]",
+        "Multidimensional array swap noexcept: int32_t[2][2] vs ThrowingMove[2][2]",
         1,
         MultidimensionalArraySwapNoexcept<User>,
         MultidimensionalArraySwapNoexcept<Solution>, MultidimensionalArraySwapNoexcept<Stl>);
@@ -272,5 +273,5 @@ void Test4::RunTests() {
     Run("Exchange moves the new value: Exchange(x, Counter(2))", 1, ExchangeMovesNewValue<User>, ExchangeMovesNewValue<Solution>, ExchangeMovesNewValue<Stl>);
     Run("Exchange copies an lvalue: Exchange(x, replacement)", 1, ExchangeCopiesLValue<User>, ExchangeCopiesLValue<Solution>, ExchangeCopiesLValue<Stl>);
     Run("Move constructor idiom: Exchange(other.Ptr, nullptr)", 1, MoveConstructorIdiom<User>, MoveConstructorIdiom<Solution>, MoveConstructorIdiom<Stl>);
-    Run("Exchange noexcept: int vs ThrowingMove", 1, ExchangeNoexcept<User>, ExchangeNoexcept<Solution>, ExchangeNoexcept<Stl>);
+    Run("Exchange noexcept: int32_t vs ThrowingMove", 1, ExchangeNoexcept<User>, ExchangeNoexcept<Solution>, ExchangeNoexcept<Stl>);
 }

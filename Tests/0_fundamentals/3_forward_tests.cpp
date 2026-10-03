@@ -1,5 +1,6 @@
 // Created by Chris Manlove
 
+#include <cstdint>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -31,11 +32,11 @@ struct Stl {
     }
 };
 
-char Which(int&) {
+char Which(int32_t&) {
     return 'L';
 }
 
-char Which(int&&) {
+char Which(int32_t&&) {
     return 'R';
 }
 
@@ -53,47 +54,47 @@ std::string WrapperPack(Args&&... args) {
 
 template <typename Impl>
 void LValueAsLValue() {
-    int x = 1;
-    Impl::template Forward<int&>(x);
-    Test::Check(std::is_same_v<decltype(Impl::template Forward<int&>(x)), int&>, "Forward<int&>(x) should return int&");
+    int32_t x = 1;
+    Impl::template Forward<int32_t&>(x);
+    Test::Check(std::is_same_v<decltype(Impl::template Forward<int32_t&>(x)), int32_t&>, "Forward<int32_t&>(x) should return int32_t&");
 }
 
 template <typename Impl>
 void LValueAsRValue() {
-    int x = 1;
-    Impl::template Forward<int>(x);
-    Test::Check(std::is_same_v<decltype(Impl::template Forward<int>(x)), int&&>, "Forward<int>(x) should return int&&");
+    int32_t x = 1;
+    Impl::template Forward<int32_t>(x);
+    Test::Check(std::is_same_v<decltype(Impl::template Forward<int32_t>(x)), int32_t&&>, "Forward<int32_t>(x) should return int32_t&&");
 }
 
 template <typename Impl>
 void RValue() {
-    Impl::template Forward<int>(1);
-    Test::Check(std::is_same_v<decltype(Impl::template Forward<int>(1)), int&&>, "Forward<int>(1) should return int&&");
+    Impl::template Forward<int32_t>(1);
+    Test::Check(std::is_same_v<decltype(Impl::template Forward<int32_t>(1)), int32_t&&>, "Forward<int32_t>(1) should return int32_t&&");
 }
 
 template <typename Impl>
 void Const() {
-    const int c = 1;
-    Impl::template Forward<const int&>(c);
+    const int32_t c = 1;
+    Impl::template Forward<const int32_t&>(c);
     Test::Check(
-        std::is_same_v<decltype(Impl::template Forward<const int&>(c)), const int&>,
-        "Forward<const int&>(c) should return const int&");
+        std::is_same_v<decltype(Impl::template Forward<const int32_t&>(c)), const int32_t&>,
+        "Forward<const int32_t&>(c) should return const int32_t&");
     Test::Check(
-        std::is_same_v<decltype(Impl::template Forward<const int>(c)), const int&&>,
-        "Forward<const int>(c) should return const int&&");
+        std::is_same_v<decltype(Impl::template Forward<const int32_t>(c)), const int32_t&&>,
+        "Forward<const int32_t>(c) should return const int32_t&&");
 }
 
 template <typename Impl>
 void ThroughWrapper() {
-    int x = 1;
+    int32_t x = 1;
     Test::Check(Wrapper<Impl>(x) == 'L', "Wrapper(x) should pass x on as an lvalue");
     Test::Check(Wrapper<Impl>(1) == 'R', "Wrapper(1) should pass 1 on as an rvalue");
 }
 
 template <typename Impl>
 void ParameterPack() {
-    int x = 1;
-    int y = 2;
+    int32_t x = 1;
+    int32_t y = 2;
     Test::Check(WrapperPack<Impl>(x, 1, y, 2) == "LRLR", "WrapperPack(x, 1, y, 2) should pass on L, R, L, R");
 }
 
@@ -106,10 +107,10 @@ Test3::Test3()
 void Test3::RunTests() {
     using namespace tests::forward;
 
-    Run("L value as L value: Forward<int&>(x)", 1, LValueAsLValue<User>, LValueAsLValue<Solution>, LValueAsLValue<Stl>);
-    Run("L value as R value: Forward<int>(x)", 1, LValueAsRValue<User>, LValueAsRValue<Solution>, LValueAsRValue<Stl>);
-    Run("R value: Forward<int>(1)", 1, RValue<User>, RValue<Solution>, RValue<Stl>);
-    Run("Const: Forward<const int&>(c), Forward<const int>(c)", 1, Const<User>, Const<Solution>, Const<Stl>);
+    Run("L value as L value: Forward<int32_t&>(x)", 1, LValueAsLValue<User>, LValueAsLValue<Solution>, LValueAsLValue<Stl>);
+    Run("L value as R value: Forward<int32_t>(x)", 1, LValueAsRValue<User>, LValueAsRValue<Solution>, LValueAsRValue<Stl>);
+    Run("R value: Forward<int32_t>(1)", 1, RValue<User>, RValue<Solution>, RValue<Stl>);
+    Run("Const: Forward<const int32_t&>(c), Forward<const int32_t>(c)", 1, Const<User>, Const<Solution>, Const<Stl>);
     Run("Through a wrapper: Wrapper(x), Wrapper(1)", 1, ThroughWrapper<User>, ThroughWrapper<Solution>, ThroughWrapper<Stl>);
     Run("Parameter pack: WrapperPack(x, 1, y, 2)", 1, ParameterPack<User>, ParameterPack<Solution>, ParameterPack<Stl>);
 }
