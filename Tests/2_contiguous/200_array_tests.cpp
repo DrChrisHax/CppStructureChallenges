@@ -94,8 +94,8 @@ void Data() {
 
 template <typename Impl>
 void Size() {
-    ArrayOf<Impl, int32_t, 3> a;
-    ArrayOf<Impl, int32_t, 5> b;
+    ArrayOf<Impl, int32_t, 3> a = {};
+    ArrayOf<Impl, int32_t, 5> b = {};
     Test::Check(a.Size() == 3, "Size() of Array<int32_t, 3> should be 3");
     Test::Check(b.Size() == 5, "Size() of Array<int32_t, 5> should be 5");
 }
