@@ -9,6 +9,7 @@
 #include "0_fundamentals/3_forward_tests.hpp"
 #include "0_fundamentals/4_swap_tests.hpp"
 #include "0_fundamentals/5_addressof_tests.hpp"
+#include "0_fundamentals/6_iterators_tests.hpp"
 #include "1_ownership/100_ownership_primer_tests.hpp"
 #include "2_contiguous/200_array_tests.hpp"
 #include "2_contiguous/201_span_tests.hpp"
@@ -47,6 +48,11 @@ int main() {
         }
         case 5: {
             Test5 test;
+            test.RunAll();
+            break;
+        }
+        case 6: {
+            Test6 test;
             test.RunAll();
             break;
         }
