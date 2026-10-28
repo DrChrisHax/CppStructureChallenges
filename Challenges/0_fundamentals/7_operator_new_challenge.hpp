@@ -59,8 +59,7 @@
 //
 // Part 2: write Widget's allocation functions with std::malloc and std::free. malloc is C's allocator: it returns raw
 // bytes or nullptr, never throws, and knows nothing about constructors. It's what operator new sits on in most
-// standard libraries. Widget also records every call in WidgetStats so the tests can see them, the same way the
-// next challenge counts every allocation in a whole program.
+// standard libraries. Widget also records every call in WidgetStats so the tests can see them.
 // - operator new(size): malloc the bytes. If malloc returns nullptr, throw std::bad_alloc; operator new never returns
 //   null. A size of 0 must still give back a unique, non-null pointer, but malloc(0) is allowed to return nullptr, so
 //   ask malloc for at least one byte. Then add 1 to Allocations and size to BytesAllocated.
@@ -77,9 +76,10 @@
 // Left out on purpose:
 // - The new-handler loop: the real operator new calls a user-installed function and retries before giving up and
 //   throwing. std::set_new_handler is rarely used.
-// - Replacing the GLOBAL operator new, which changes every allocation in the program (challenge 8).
-// - The aligned forms that take std::align_val_t, for over-aligned types (challenge 9).
-// - std::construct_at and std::destroy, the library versions of placement new and p->~T() (challenge 10).
+// - Replacing the GLOBAL operator new, which changes every allocation in the program. Leak checkers and profilers
+//   do it; ASan does it for you here.
+// - The aligned forms that take std::align_val_t, for over-aligned types (challenge 8).
+// - std::construct_at and std::destroy, the library versions of placement new and p->~T() (challenge 9).
 //
 // Toolbox: std::nothrow, std::nothrow_t, and std::bad_alloc come from <new>. std::malloc and std::free come from
 // <cstdlib>.

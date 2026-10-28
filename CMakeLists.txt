@@ -4,6 +4,7 @@ project(CppStructuresChallenges CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -21,3 +22,6 @@ if(CSC_SANITIZE)
     target_compile_options(csc PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
     target_link_options(csc PRIVATE -fsanitize=address,undefined)
 endif()
+
+# Link compile_commands.json into the source root so clangd and editors find it.
+file(CREATE_LINK "${CMAKE_BINARY_DIR}/compile_commands.json" "${CMAKE_SOURCE_DIR}/compile_commands.json" SYMBOLIC)
